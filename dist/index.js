@@ -12,20 +12,23 @@ app.get('/', (req, res) => {
 });
 io.on('connection', (socket) => {
     // users = JSON.parse(await readFile('users.json'));
-    socket.emit('welcome to clients', 'Welcome someone new!');
+    socket.emit('welcome to clients', 'Someone is connected!');
+    console.log('Someone is connected (not yet logged in)!');
     socket.on('message', (msg) => {
-        console.log(`message received from user: ${msg.from}`);
-        console.log(`message received content: ${msg.content}`);
+        console.log(`Message from user: ${msg.from}`);
+        console.log(`Message content: ${msg.content}`);
         io.emit('message to clients', msg);
     });
     socket.on('disconnect', () => {
         io.emit('users after disconnect to clients', '[Server]: Someone was disconnected.');
+        console.log('Someone disconnected');
         // delete disconnected user from user list kind of like so:
         // const usersUpdated = users.slice(users.indexOf(user))
         // await writeFile('users.json', JSON.stringify(usersUpdated));
     });
-    socket.on('connect', () => {
-        io.emit('users after connect to clients', '[Server]: Someone was connected.');
+    socket.on('login', () => {
+        io.emit('users after login to clients', '[Server]: Someone wanted to log in.');
+        console.log('Someone wanted to log in!');
         // add connected user from user list if not already in users list kind of like so:
         // const usersUpdated = users.push(user)
         // await writeFile('users.json', JSON.stringify(usersUpdated));
