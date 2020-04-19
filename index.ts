@@ -7,48 +7,45 @@ const io = require('socket.io')(http);
 // const writeFile = util.promisify(fs.writeFile);
 
 const port: number = 3001;
-// const users = [ { username: 'Viktor' } ];
+const users = [];
 
 app.get('/', (req, res) => {
   res.send('<h1>Hello world</h1>');
 });
 
-io.on('connection', (socket) => {
+io.on('connection', (client) => {
+  console.log('a user connected')
   // users = JSON.parse(await readFile('users.json'));
 
-  socket.on('message', (msg) => {
-    console.log(`Message from user: ${msg.from}`);
-    console.log(`Message content: ${msg.content}`);
-    io.emit('message to clients', msg);
+  client.on('message', (msg) => {
+    console.log('Number of clients: ', io.engine.clientsCount);
+    console.log('send message to clients')
+    io.emit('message', msg);
   });
 
-  socket.on('logout', (username) => {
-    io.emit('users to clients after logout', `${username} wanted to logout.`);
-    console.log(username);
+  client.on('logout', (username) => {
+    io.emit('users after logout', users);
     // delete disconnected user from user list kind of like so:
     // const usersUpdated = users.slice(users.indexOf(user))
     // await writeFile('users.json', JSON.stringify(usersUpdated));
   });
 
-  socket.on('disconnect', (username) => {
+  client.on('disconnect', (username) => {
+    console.log('a user disconnected')
     io.emit(
-      'users to clients after disconnect',
+      'users after disconnect',
       '[Server]: Someone was disconnected.'
     );
-    console.log(username);
     // delete disconnected user from user list kind of like so:
     // const usersUpdated = users.slice(users.indexOf(user))
     // await writeFile('users.json', JSON.stringify(usersUpdated));
   });
 
-  socket.on('login', () => {
-    io.emit(
-      'users after login to clients',
-      '[Server]: Someone wanted to log in.'
-    );
-    console.log('Someone wanted to log in!');
-    // add connected user from user list if not already in users list kind of like so:
-    // const usersUpdated = users.push(user)
+  client.on('login', (username) => {
+    if (users.find(username) === -1) {
+      users.push(username);
+    }
+    io.emit('users after login', users);
     // await writeFile('users.json', JSON.stringify(usersUpdated));
   });
 });
