@@ -10,30 +10,32 @@ const users = [];
 app.get('/', (req, res) => {
     res.send('<h1>Hello world</h1>');
 });
-io.on('connection', (socket) => {
+io.on('connection', (client) => {
+    console.log('a user connected');
     // users = JSON.parse(await readFile('users.json'));
-    socket.on('message to server', (msg) => {
+    client.on('message', (msg) => {
         console.log('Number of clients: ', io.engine.clientsCount);
         console.log('send message to clients');
-        io.emit('message to clients', msg);
+        io.emit('message', msg);
     });
-    socket.on('logout to server', (username) => {
-        io.emit('users to clients after logout', users);
+    client.on('logout', (username) => {
+        io.emit('users after logout', users);
         // delete disconnected user from user list kind of like so:
         // const usersUpdated = users.slice(users.indexOf(user))
         // await writeFile('users.json', JSON.stringify(usersUpdated));
     });
-    socket.on('disconnect to server', (username) => {
-        io.emit('users to clients after disconnect', '[Server]: Someone was disconnected.');
+    client.on('disconnect', (username) => {
+        console.log('a user disconnected');
+        io.emit('users after disconnect', '[Server]: Someone was disconnected.');
         // delete disconnected user from user list kind of like so:
         // const usersUpdated = users.slice(users.indexOf(user))
         // await writeFile('users.json', JSON.stringify(usersUpdated));
     });
-    socket.on('login to server', (username) => {
+    client.on('login', (username) => {
         if (users.find(username) === -1) {
             users.push(username);
         }
-        io.emit('users to clients after login', users);
+        io.emit('users after login', users);
         // await writeFile('users.json', JSON.stringify(usersUpdated));
     });
 });

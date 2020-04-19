@@ -19,7 +19,7 @@ io.on('connection', (client) => {
 
   client.on('message', (msg) => {
     console.log('Number of clients: ', io.engine.clientsCount);
-    console.log('send message to clients')
+    console.log('Message object: ', msg);
     io.emit('message', msg);
   });
 
