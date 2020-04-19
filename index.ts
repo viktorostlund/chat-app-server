@@ -30,7 +30,7 @@ io.on('connection', (client) => {
     // await writeFile('users.json', JSON.stringify(usersUpdated));
   });
 
-  client.on('disconnect', (username) => {
+  client.on('disconnect', () => {
     console.log('a user disconnected')
     io.emit(
       'users after disconnect',
@@ -42,7 +42,8 @@ io.on('connection', (client) => {
   });
 
   client.on('login', (username) => {
-    if (users.find(username) === -1) {
+    console.log(users, username);
+    if (username && !users.includes(username)) {
       users.push(username);
     }
     io.emit('users after login', users);

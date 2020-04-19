@@ -15,7 +15,7 @@ io.on('connection', (client) => {
     // users = JSON.parse(await readFile('users.json'));
     client.on('message', (msg) => {
         console.log('Number of clients: ', io.engine.clientsCount);
-        console.log('send message to clients');
+        console.log('Message object: ', msg);
         io.emit('message', msg);
     });
     client.on('logout', (username) => {
@@ -24,7 +24,7 @@ io.on('connection', (client) => {
         // const usersUpdated = users.slice(users.indexOf(user))
         // await writeFile('users.json', JSON.stringify(usersUpdated));
     });
-    client.on('disconnect', (username) => {
+    client.on('disconnect', () => {
         console.log('a user disconnected');
         io.emit('users after disconnect', '[Server]: Someone was disconnected.');
         // delete disconnected user from user list kind of like so:
@@ -32,7 +32,8 @@ io.on('connection', (client) => {
         // await writeFile('users.json', JSON.stringify(usersUpdated));
     });
     client.on('login', (username) => {
-        if (users.find(username) === -1) {
+        console.log(users, username);
+        if (username && users.find(username) === -1) {
             users.push(username);
         }
         io.emit('users after login', users);
