@@ -16,12 +16,9 @@ io.on('connection', (client) => {
     // users = JSON.parse(await readFile('users.json'));
     client.on('message', (msg) => {
         console.log('Message object: ', msg);
-        io.engine.clients.forEach(user => {
+        users.forEach(user => {
             if (user.userName) {
-                console.log(user, 'should send message');
-                console.log(io.engine.clients[user.id] === client);
-                // io.engine.clients[user.id].emit("message", msg)
-                io.emit("message", msg);
+                io.sockets.connected[user.id].emit('message', msg);
             }
         });
     });
