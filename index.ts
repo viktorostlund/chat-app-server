@@ -14,16 +14,16 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (client) => {
-  console.log('a user connected')
+  users.push({id: client.id})
+  console.log('Users connected: ', users)
   // users = JSON.parse(await readFile('users.json'));
 
   client.on('message', (msg) => {
-    console.log('Number of clients: ', io.engine.clientsCount);
     console.log('Message object: ', msg);
     io.emit('message', msg);
   });
 
-  client.on('logout', (username) => {
+  client.on('logout', (userName) => {
     io.emit('users after logout', users);
     // delete disconnected user from user list kind of like so:
     // const usersUpdated = users.slice(users.indexOf(user))
@@ -31,23 +31,41 @@ io.on('connection', (client) => {
   });
 
   client.on('disconnect', () => {
-    console.log('a user disconnected')
-    io.emit(
-      'users after disconnect',
-      '[Server]: Someone was disconnected.'
-    );
-    // delete disconnected user from user list kind of like so:
-    // const usersUpdated = users.slice(users.indexOf(user))
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].userName && users[i].id === client.id) {
+        console.log(`a user disconnected: ${users[i].userName} (${client.id})`)
+        io.emit('message', {
+          userName: 'Server',
+          message: `${users[i].userName} was disconnected`,
+          time: new Date().getTime(),
+        });
+      }
+    }
     // await writeFile('users.json', JSON.stringify(usersUpdated));
   });
 
-  client.on('login', (username) => {
-    console.log(users, username);
-    if (username && !users.includes(username)) {
-      users.push(username);
-    }
-    io.emit('users after login', users);
+  client.on('login', (userName) => {
+    if (!userName) {
+      client.emit('users after login', 'empty');
+    } else if (users.some(user => user.userName === userName)) {
+      console.log('Taken')
+      client.emit('users after login', 'taken');
+    } else { 
+      console.log('Log in user!!')
+      for (let i = 0; i < users.length; i++) {
+        console.log(users[i].id, client.id)
+        if (users[i].id === client.id) {
+          users[i].userName = userName;
+          client.emit('users after login', 'successful');
+          io.emit('message', {
+            userName: 'Server',
+            message: `${users[i].userName} was connected`,
+            time: new Date().getTime(),
+          });
+        }
+      }
     // await writeFile('users.json', JSON.stringify(usersUpdated));
+    };
   });
 });
 
