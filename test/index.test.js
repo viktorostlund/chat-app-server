@@ -8,33 +8,44 @@ var io = require('socket.io-client');
 
 describe("echo", function () {
 
-let server,
-    options ={
-        transports: ['websocket'],
-        'force new connection': true
-    };
+  let server,
+      options ={
+          transports: ['websocket'],
+          'force new connection': true
+      };
 
-beforeEach(function (done) {
-    // start the server
-    server = require('../index.ts').server;
+  beforeEach(function (done) {
+      // start the server
+      server = require('../index.ts').server;
 
-    done();
-});
+      done();
+  });
 
-it("echos message", function (done) {
-  var client = io.connect("http://localhost:3001", options);
+  it("login should receive correct feedback for empty username login attempt", function (done) {
+    var client = io.connect("http://localhost:3001", options);
 
-  client.once("connect", function () {
-    console.log('connected')
-      client.once("echo", function (message) {
-        console.log('echo received')
-          message.should.equal("Hello World");
+    client.once("connect", function () {
+      client.once("users after login", function (message) {
+          message.should.equal("empty");
           client.disconnect();
           done();
       });
-      client.emit("echo", "Hello World");
+      client.emit("login", "");
+    });
   });
-});
+
+  it("login should receive correct feedback for empty username login attempt", function (done) {
+    var client = io.connect("http://localhost:3001", options);
+
+    client.once("connect", function () {
+      client.once("users after login", function (message) {
+          message.should.equal("empty");
+          client.disconnect();
+          done();
+      });
+      client.emit("login", "Viktor");
+    });
+  });
 
 })
 
