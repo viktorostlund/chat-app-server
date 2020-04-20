@@ -20,27 +20,68 @@ io.on('connection', (client) => {
 
   client.on('message', (msg) => {
     console.log('Message object: ', msg);
-    io.emit('message', msg);
+    users.forEach(user => {
+      if (user.userName) {
+        io.sockets.connected[user.id].emit('message', msg);
+      }
+    });
   });
 
   client.on('logout', (userName) => {
-    io.emit('users after logout', users);
-    // delete disconnected user from user list kind of like so:
-    // const usersUpdated = users.slice(users.indexOf(user))
-    // await writeFile('users.json', JSON.stringify(usersUpdated));
-  });
-
-  client.on('disconnect', () => {
+    let userIndex;
     for (let i = 0; i < users.length; i++) {
-      if (users[i].userName && users[i].id === client.id) {
-        console.log(`a user disconnected: ${users[i].userName} (${client.id})`)
-        io.emit('message', {
+      if (users[i].id === client.id) {
+        userIndex = i;
+      }
+    }  
+    // if (users[userIndex].userName) {
+    //   // console.log(`a user logged out: ${users[userIndex].userName} (${client.id})`)
+    //   io.emit('message', {
+    //     userName: 'Server',
+    //     message: `${users[userIndex].userName} logged out`,
+    //     time: new Date().getTime(),
+    //   });
+    // }
+    client.emit('users after logout', 'successful');
+    users[userIndex].userName = null;
+    users.forEach(user => {
+      if (user.userName) {
+        io.engine.clients[user.id].emit({
           userName: 'Server',
-          message: `${users[i].userName} was disconnected`,
+          message: `${users[userIndex].userName} was logged out`,
           time: new Date().getTime(),
         });
       }
+    })
+    // console.log(users)
+  });
+
+  client.on('disconnect', () => {
+    let userIndex;
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].id === client.id) {
+        userIndex = i;
+      }
     }
+    // if (users[userIndex].userName) {
+    //   // console.log(`a user disconnected: ${users[userIndex].userName} (${client.id})`)
+    //   io.emit('message', {
+    //     userName: 'Server',
+    //     message: `${users[userIndex].userName} was disconnected`,
+    //     time: new Date().getTime(),
+    //   });
+    // }
+    users.splice(userIndex, 1);
+    users.forEach(user => {
+      if (user.userName) {
+        io.engine.clients[user.id].emit({
+          userName: 'Server',
+          message: `${users[userIndex].userName} was connected`,
+          time: new Date().getTime(),
+        });
+      }
+    })
+    // console.log(users)
     // await writeFile('users.json', JSON.stringify(usersUpdated));
   });
 
@@ -48,20 +89,21 @@ io.on('connection', (client) => {
     if (!userName) {
       client.emit('users after login', 'empty');
     } else if (users.some(user => user.userName === userName)) {
-      console.log('Taken')
       client.emit('users after login', 'taken');
     } else { 
-      console.log('Log in user!!')
       for (let i = 0; i < users.length; i++) {
-        console.log(users[i].id, client.id)
         if (users[i].id === client.id) {
           users[i].userName = userName;
           client.emit('users after login', 'successful');
-          io.emit('message', {
-            userName: 'Server',
-            message: `${users[i].userName} was connected`,
-            time: new Date().getTime(),
-          });
+          users.forEach(user => {
+            if (user.userName && user.id === client.id) {
+              client.emit({
+                userName: 'Server',
+                message: `${users[i].userName} was logged in`,
+                time: new Date().getTime(),
+              });
+            }
+          })
         }
       }
     // await writeFile('users.json', JSON.stringify(usersUpdated));
