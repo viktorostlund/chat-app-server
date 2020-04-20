@@ -1,22 +1,23 @@
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-// const fs = require('fs');
-// const util = require('util');
-// const readFile = util.promisify(fs.readFile);
-// const writeFile = util.promisify(fs.writeFile);
 
-const port: number = 3001;
+const port = 3001;
 const users = [];
 
-app.get('/', (req, res) => {
-  res.send('<h1>Hello world</h1>');
-});
+// app.get('/', (req, res) => {
+//   res.send('<h1>Hello world</h1>');
+// });
 
 io.on('connection', (client) => {
   users.push({id: client.id})
-  console.log('Users connected: ', users)
-  // users = JSON.parse(await readFile('users.json'));
+  client.on('echo', msg => {
+    io.emit('echo', 'Hello World');
+  })
+
+  client.on('hej', function(msg) {
+    io.sockets.emit('hej', msg);
+  })
 
   client.on('message', (msg) => {
     console.log('Message object: ', msg);
@@ -88,11 +89,12 @@ io.on('connection', (client) => {
           });
         }
       });
-      // await writeFile('users.json', JSON.stringify(usersUpdated));
     };
   });
 });
 
-http.listen(port, () => {
-  console.log('listening on *:3001');
-});
+exports.server = http.listen(port)
+
+// http.listen(port, () => {
+//   console.log(`listening on ${port}`);
+// });
