@@ -3,11 +3,12 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const port = 3001;
 const users = [];
+const timeout = 6000;
 app.get('/', (req, res) => {
     res.send('<h1>Hello world</h1>');
 });
 io.on('connection', (client) => {
-    users.push({ id: client.id });
+    users.push({ id: client.id, userName: null, timer: null });
     // console.log('One new connected user. There are now ', users.length, ' connected users.');
     client.on('message', (msg) => {
         // console.log('Message object: ', msg);
@@ -31,10 +32,13 @@ io.on('connection', (client) => {
                     userIndex = i;
                 }
             }
+            users[userIndex].timer = setTimeout(() => {
+                timedLogout();
+            }, timeout);
             users[userIndex].userName = userName;
             client.emit('login', 'success');
             users.forEach(user => {
-                if (user.userName && user.id !== users[userIndex].id) {
+                if (user.userName) {
                     io.sockets.connected[user.id].emit('message', {
                         userName: 'Server',
                         message: `${users[userIndex].userName} was logged in`,
@@ -47,17 +51,22 @@ io.on('connection', (client) => {
     });
     client.on('logout', (userName) => {
         let userIndex;
-        let isLoggedIn;
         for (let i = 0; i < users.length; i++) {
             if (users[i].id === client.id) {
-                isLoggedIn = users[i].userName ? true : false;
+                ;
                 userIndex = i;
             }
         }
-        if (isLoggedIn) {
+        console.log(users[userIndex].userName);
+        if (users[userIndex].userName) {
+            users[userIndex].userName = null;
+            if (users[userIndex].timer) {
+                clearTimeout(users[userIndex].timer);
+                users[userIndex].timer = null;
+            }
             client.emit('logout', 'success');
             users.forEach(user => {
-                if (user.userName) {
+                if (users[userIndex].userName && user.userName) {
                     io.sockets.connected[user.id].emit('message', {
                         userName: 'Server',
                         message: `${users[userIndex].userName} was logged out`,
@@ -78,7 +87,7 @@ io.on('connection', (client) => {
             }
         }
         users.forEach(user => {
-            if (user.userName && user.id !== users[userIndex].id) {
+            if (user.userName && users[userIndex].userName && user.id !== users[userIndex].id) {
                 io.sockets.connected[user.id].emit('message', {
                     userName: 'Server',
                     message: `${users[userIndex].userName} was disconnected`,
@@ -88,6 +97,30 @@ io.on('connection', (client) => {
         });
         users.splice(userIndex, 1);
     });
+    const timedLogout = () => {
+        console.log('Timed disconnect!');
+        console.log('client: ', client.id);
+        // const io.sockets.connected[clientId]
+        let userIndex;
+        for (let i = 0; i < users.length; i++) {
+            if (users[i].id === client.id) {
+                userIndex = i;
+            }
+        }
+        users[userIndex].timer = null;
+        client.emit('logout', 'success');
+        if (users[userIndex] && users[userIndex].userName) {
+            users.forEach(user => {
+                if (user.id !== users[userIndex].id) {
+                    io.sockets.connected[user.id].emit('message', {
+                        userName: 'Server',
+                        message: `${users[userIndex].userName} was logged out due to inactivity`,
+                        time: new Date().getTime(),
+                    });
+                }
+            });
+        }
+    };
 });
 exports.server = http.listen(port);
 // http.listen(port, () => {
