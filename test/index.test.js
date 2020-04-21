@@ -1,12 +1,12 @@
 
-
 const chai = require('chai')
-const mocha = require('mocha')
+// const mocha = require('mocha')
 const should = chai.should()
+const port = 3001;
 
-var io = require('socket.io-client');
+const io = require('socket.io-client');
 
-describe("echo", function () {
+describe("Client socket transmissions should result in correct response from server, ", function () {
 
   let server,
       options ={
@@ -15,17 +15,35 @@ describe("echo", function () {
       };
 
   beforeEach(function (done) {
-      // start the server
       server = require('../index.ts').server;
-
       done();
   });
 
-  it("login should receive correct feedback for empty username login attempt", function (done) {
-    var client = io.connect("http://localhost:3001", options);
+  it("message sent from a logged in client should be sent back to the same client", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+
+    const messageObj = {
+      userName: 'Viktor',
+      message: 'Hej',
+      time: new Date().getTime(),
+    }
 
     client.once("connect", function () {
-      client.once("users after login", function (message) {
+      client.emit("login", "Viktor")
+        client.once("message", function (response) {
+            response.message.should.equal(messageObj.message);
+            client.disconnect();
+            done();
+        });
+        client.emit("message", messageObj);
+    });
+  });
+
+  it("login attempt with empty username should result in 'empty' response", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+
+    client.once("connect", function () {
+      client.once("login", function (message) {
           message.should.equal("empty");
           client.disconnect();
           done();
@@ -34,12 +52,12 @@ describe("echo", function () {
     });
   });
 
-  it("login should receive correct feedback for empty username login attempt", function (done) {
-    var client = io.connect("http://localhost:3001", options);
+  it("login attempt with valid username should result in 'success' response", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
 
     client.once("connect", function () {
-      client.once("users after login", function (message) {
-          message.should.equal("empty");
+      client.once("login", function (message) {
+          message.should.equal("success");
           client.disconnect();
           done();
       });
@@ -47,52 +65,59 @@ describe("echo", function () {
     });
   });
 
+  it("login attempt with taken username should result in 'taken' response", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+    const client2 = io.connect(`http://localhost:${port}`, options);
+
+    client.once("connect", function () {
+      client.emit("login", "Viktor");
+      client2.once("connect", function () {
+        client2.once("login", function (message) {
+            message.should.equal("taken");
+            client.disconnect();
+            client2.disconnect();
+            done();
+        });
+        client2.emit("login", "Viktor");
+      });
+    });
+  });
+
+  it("logout attempt from a client that is not logged in should get a 'failure' response", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+
+    client.once("connect", function () {
+        client.once("logout", function (response) {
+            response.should.equal("failure");
+            client.disconnect();
+            done();
+        });
+        client.emit("logout", "Hector");
+    });
+  });
+
+  it("logout attempt from a logged in client should get a 'success' response", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+
+    client.once("connect", function () {
+      client.emit("login", "Viktor")
+        client.once("logout", function (response) {
+            response.should.equal("success");
+            client.disconnect();
+            done();
+        });
+        client.emit("logout", "Viktor");
+    });
+  });
+
+  // Test that if one client is logged out, other clients gets message about it
+  // Test that if one client logs in, other clients gets message about it
+  // Test that messages are only sent to logged in clients
+  // Test that timed logouts work
+  // Test that if one client is disconnected, it cannot log in anymore
+  // Test that if one client is disconnected, other clients gets message about it
+
 })
-
-// const assert = require('assert');
-
-// var expect = require('chai').expect
-//   , server = require('../index.ts')
-//   , io = require('socket.io-client')
-//   , ioOptions = { 
-//       transports: ['websocket']
-//     , forceNew: true
-//     , reconnection: false
-//   }
-//   , testMsg = 'HelloWorld'
-//   , sender
-//   , receiver
-
-// describe('Chat Events', function(){
-//   beforeEach(function(done){
-    
-//     // start the io server
-//     server.start()
-//     // connect two io clients
-//     sender = io('http://localhost:3000/', ioOptions)
-//     receiver = io('http://localhost:3000/', ioOptions)
-    
-//     // finish beforeEach setup
-//     done()
-//   })
-//   afterEach(function(done){
-    
-//     // disconnect io clients after each test
-//     sender.disconnect()
-//     receiver.disconnect()
-//     done()
-//   })
-
-//   describe('Message Events', function(){
-//     it('Clients should receive a message when the `message` event is emited.', function(done){
-//       sender.emit('message', testMsg)
-//       receiver.on('message', function(msg){
-//         expect(msg).to.equal(testMsg)
-//         done()
-//       })
-//     })
-//   })
-// })
 
 // describe('Array', function() {
 //   describe('#indexOf()', function() {
