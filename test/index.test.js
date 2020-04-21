@@ -14,28 +14,50 @@ describe("Client socket transmissions should result in correct response from ser
           'force new connection': true
       };
 
-  beforeEach(function (done) {
-      server = require('../index.ts').server;
-      done();
-  });
-
-  it("message sent from a logged in client should be sent back to the same client", function (done) {
-    const client = io.connect(`http://localhost:${port}`, options);
-
     const messageObj = {
+      userName: 'Viktor',
+      message: 'Viktor entered the chat',
+      time: new Date().getTime(),
+    }
+
+    const messageObj2 = {
       userName: 'Viktor',
       message: 'Hej',
       time: new Date().getTime(),
     }
 
+  beforeEach(function (done) {
+      server = require('../index.ts').server;
+      done();
+  });
+
+  it("when a client logs in it should get a message back", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+
     client.once("connect", function () {
+      client.once("message", function (response) {
+        response.message.should.equal(messageObj.message);
+        client.disconnect();
+        done();
+      });
       client.emit("login", "Viktor")
+        // client.emit("message", messageObj);
+    });
+  });
+
+  it("incoming messages should be emmitted from the server", function (done) {
+    const client = io.connect(`http://localhost:${port}`, options);
+
+    client.once("connect", function () {
+      client.once("message", function (response) {
         client.once("message", function (response) {
-            response.message.should.equal(messageObj.message);
-            client.disconnect();
-            done();
+          response.message.should.equal(messageObj2.message);
+          client.disconnect();
+          done();
         });
-        client.emit("message", messageObj);
+        client.emit("message", messageObj2)
+      });
+      client.emit("login", "Viktor");
     });
   });
 

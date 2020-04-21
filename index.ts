@@ -6,40 +6,29 @@ const port = 3001;
 const users = [];
 const timeout = 10000;
 
-app.get('/', (req, res) => {
-  res.send('<h1>Hello world</h1>');
-});
+// app.get('/', (req, res) => {
+//   res.send('<h1>Hello world</h1>');
+// });
 
 io.on('connection', (client) => {
 
   users.push({id: client.id, userName: null, timer: null})
-  // console.log('One new connected user: ', client.id, ' There are now ', users.length, ' connected users.');
+
   process.removeAllListeners();
+
   process.on('SIGINT', () => logoutServerExit());
+
   process.on('SIGTERM', () => logoutServerExit());
 
   client.on('message', (msg) => {
-    // console.log('Message object received: ', msg);
-
-    let userIndex;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === client.id) {
-        userIndex = i;
-      }
-    }
-
-    users.forEach(user => {
-      if (user.userName) {
-        io.sockets.connected[user.id].emit('message', msg);
-      }
-    });
-    if (users[userIndex].timer) {
+    const userIndex = getUserIndex();
+    emitMessage(msg.message, msg.userName)
+    if (users[userIndex] && users[userIndex].timer) {
       clearTimeout(users[userIndex].timer);
     }
     users[userIndex].timer = setTimeout(() => {
       timedLogout();
     }, timeout);
-
   });
 
   client.on('login', (userName) => {
@@ -48,39 +37,18 @@ io.on('connection', (client) => {
     } else if (users.some(user => user.userName === userName)) {
       client.emit('login', 'taken');
     } else { 
-      let userIndex;
-      for (let i = 0; i < users.length; i++) {
-        if (users[i].id === client.id) {
-          userIndex = i;
-        }
-      }
-      
-      users[userIndex].timer = setTimeout(() => {
+      const i = getUserIndex();
+      users[i].timer = setTimeout(() => {
         timedLogout();
       }, timeout);
-
-      users[userIndex].userName = userName;
+      users[i].userName = userName;
       client.emit('login', 'success');
-      
-      users.forEach(user => {
-        if (user.userName) {
-          io.sockets.connected[user.id].emit('message', {
-            userName: 'Server',
-            message: `${users[userIndex].userName} entered the chat`,
-            time: new Date().getTime(),
-          });
-        }
-      });
+      emitMessage(`${users[i].userName} entered the chat`, '');
     };
   });
 
   client.on('logout', (userName) => {
-    let userIndex;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === client.id) {;
-        userIndex = i;
-      }
-    }
+    const userIndex = getUserIndex()
     if (users[userIndex].userName) {
       users[userIndex].userName = null;
       if (users[userIndex].timer) {
@@ -88,15 +56,7 @@ io.on('connection', (client) => {
         users[userIndex].timer = null;
       }
       client.emit('logout', 'success');
-      users.forEach(user => {
-        if (users[userIndex].userName && user.userName) {
-          io.sockets.connected[user.id].emit('message', {
-            userName: 'Server',
-            message: `${users[userIndex].userName} left the chat`,
-            time: new Date().getTime(),
-          });
-        }
-      });
+      emitMessage(`${users[userIndex].userName} left the chat`, '', userIndex);
     } else {
       client.emit('logout', 'failure');
     }
@@ -109,15 +69,7 @@ io.on('connection', (client) => {
         userIndex = i;
       }
     } 
-    users.forEach(user => {
-      if (user.userName && users[userIndex].userName && user.id !== users[userIndex].id) {
-        io.sockets.connected[user.id].emit('message', {
-          userName: 'Server',
-          message: `${users[userIndex].userName} was disconnected`,
-          time: new Date().getTime(),
-        });
-      }
-    });
+    emitMessage(`${users[userIndex].userName} was disconnected`, '');
     if (users[userIndex].timer) {
       clearTimeout(users[userIndex].timer);
     }
@@ -125,13 +77,7 @@ io.on('connection', (client) => {
   });
 
   const timedLogout = () => {
-    let userIndex;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === client.id) {
-        userIndex = i;
-      }
-    }
-    client.emit('logout', 'inactivity');
+    const userIndex = getUserIndex();
     if (users[userIndex] && users[userIndex].userName) {
       users.forEach(user => {
         if (user.id !== users[userIndex].id) {
@@ -142,13 +88,35 @@ io.on('connection', (client) => {
           });
         }
       });
+      // emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
     }
+    client.emit('logout', 'inactivity');
     users[userIndex].userName = null;
-    if (users[userIndex].timer) {
-      clearTimeout(users[userIndex].timer);
-      users[userIndex].timer = null;
-    }
+    users[userIndex].timer = null;
   };
+
+  const emitMessage = (message, from, self=null) => {
+    const sendList = self !== null ? users.slice(self, 1) : users;
+    // console.log(sendList);
+    sendList.forEach(user => {
+      if (user.userName) {
+        io.sockets.connected[user.id].emit('message', {
+          userName: from,
+          message,
+          time: new Date().getTime(),
+        });
+      }
+    });
+  }
+
+  const getUserIndex = () => {
+    let userIndex;
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].id === client.id) {
+        return i;
+      }
+    }
+  }
   
   const logoutServerExit = () => {
     client.emit('logout', 'error');
