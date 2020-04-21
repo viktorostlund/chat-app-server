@@ -10,19 +10,13 @@ app.get('/', (req, res) => {
   res.send('<h1>Hello world</h1>');
 });
 
-// http.on('close', function() {
-//   console.log(' Stopping ...');
-// });
-
 io.on('connection', (client) => {
 
   users.push({id: client.id, userName: null, timer: null})
   // console.log('One new connected user: ', client.id, ' There are now ', users.length, ' connected users.');
-
-  process.on('SIGINT', function() {
-    client.emit('logout', 'error');
-    process.removeAllListeners();
-  });
+  process.removeAllListeners();
+  process.on('SIGINT', () => logoutServerExit());
+  process.on('SIGTERM', () => logoutServerExit());
 
   client.on('message', (msg) => {
     // console.log('Message object received: ', msg);
@@ -72,7 +66,7 @@ io.on('connection', (client) => {
         if (user.userName) {
           io.sockets.connected[user.id].emit('message', {
             userName: 'Server',
-            message: `${users[userIndex].userName} was logged in`,
+            message: `${users[userIndex].userName} entered the chat`,
             time: new Date().getTime(),
           });
         }
@@ -98,7 +92,7 @@ io.on('connection', (client) => {
         if (users[userIndex].userName && user.userName) {
           io.sockets.connected[user.id].emit('message', {
             userName: 'Server',
-            message: `${users[userIndex].userName} was logged out`,
+            message: `${users[userIndex].userName} left the chat`,
             time: new Date().getTime(),
           });
         }
@@ -137,13 +131,13 @@ io.on('connection', (client) => {
         userIndex = i;
       }
     }
-    client.emit('logout', 'success');
+    client.emit('logout', 'inactivity');
     if (users[userIndex] && users[userIndex].userName) {
       users.forEach(user => {
         if (user.id !== users[userIndex].id) {
           io.sockets.connected[user.id].emit('message', {
             userName: 'Server',
-            message: `${users[userIndex].userName} was logged out due to inactivity`,
+            message: `${users[userIndex].userName} was left the chat due to inactivity`,
             time: new Date().getTime(),
           });
         }
@@ -155,6 +149,11 @@ io.on('connection', (client) => {
       users[userIndex].timer = null;
     }
   };
+  
+  const logoutServerExit = () => {
+    client.emit('logout', 'error');
+    process.removeAllListeners();
+  }
 
 });
 
