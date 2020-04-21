@@ -10,10 +10,19 @@ app.get('/', (req, res) => {
   res.send('<h1>Hello world</h1>');
 });
 
+// http.on('close', function() {
+//   console.log(' Stopping ...');
+// });
+
 io.on('connection', (client) => {
 
   users.push({id: client.id, userName: null, timer: null})
   // console.log('One new connected user: ', client.id, ' There are now ', users.length, ' connected users.');
+
+  process.on('SIGINT', function() {
+    client.emit('logout', 'error');
+    process.removeAllListeners();
+  });
 
   client.on('message', (msg) => {
     // console.log('Message object received: ', msg);
