@@ -56,13 +56,8 @@ io.on('connection', (client) => {
         }
     });
     client.on('disconnect', () => {
-        let userIndex;
-        for (let i = 0; i < users.length; i++) {
-            if (users[i].id === client.id) {
-                userIndex = i;
-            }
-        }
-        emitMessage(`${users[userIndex].userName} was disconnected`, '');
+        const userIndex = getUserIndex();
+        emitMessage(`${users[userIndex].userName} was disconnected`, '', userIndex);
         if (users[userIndex].timer) {
             clearTimeout(users[userIndex].timer);
         }
@@ -87,19 +82,23 @@ io.on('connection', (client) => {
         users[userIndex].timer = null;
     };
     const emitMessage = (message, from, self = null) => {
+        console.log(users);
         const sendList = self !== null ? users.slice(self, 1) : users;
+        console.log(sendList);
         // console.log(sendList);
-        sendList.forEach(user => {
-            if (user.userName) {
-                console.log(user.id);
-                console.log(io.sockets.connected);
-                io.sockets.connected[user.id].emit('message', {
-                    userName: from,
-                    message,
-                    time: new Date().getTime(),
-                });
-            }
-        });
+        // console.log(self)
+        // console.log(sendList)
+        if (sendList.length > 0) {
+            sendList.forEach(user => {
+                if (user.userName) {
+                    io.sockets.connected[user.id].emit('message', {
+                        userName: from,
+                        message,
+                        time: new Date().getTime(),
+                    });
+                }
+            });
+        }
     };
     const getUserIndex = () => {
         let userIndex;

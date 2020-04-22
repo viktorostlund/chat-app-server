@@ -14,6 +14,7 @@ io.on('connection', (client) => {
 
   users.push({id: client.id, userName: null, timer: null})
 
+  process.setMaxListeners(100);
   process.removeAllListeners();
 
   process.on('SIGINT', () => logoutServerExit());
@@ -91,17 +92,21 @@ io.on('connection', (client) => {
   };
 
   const emitMessage = (message, from, self=null) => {
-    const sendList = self !== null ? users.slice(self, 1) : users;
-    // console.log(sendList);
-    sendList.forEach(user => {
-      if (user.userName) {
-        io.sockets.connected[user.id].emit('message', {
-          userName: from,
-          message,
-          time: new Date().getTime(),
-        });
-      }
-    });
+    const sendList = users.slice();
+    if (self !== null) {
+      sendList.splice(self, 1);
+    }
+    if (sendList.length > 0) {
+      sendList.forEach(user => {
+        if (user.userName) {
+          io.sockets.connected[user.id].emit('message', {
+            userName: from,
+            message,
+            time: new Date().getTime(),
+          });
+        }
+      });
+    }
   }
 
   const getUserIndex = () => {
