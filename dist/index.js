@@ -9,6 +9,7 @@ const timeout = 10000;
 // });
 io.on('connection', (client) => {
     users.push({ id: client.id, userName: null, timer: null });
+    process.setMaxListeners(100);
     process.removeAllListeners();
     process.on('SIGINT', () => logoutServerExit());
     process.on('SIGTERM', () => logoutServerExit());
@@ -25,6 +26,9 @@ io.on('connection', (client) => {
     client.on('login', (userName) => {
         if (!userName) {
             client.emit('login', 'empty');
+        }
+        else if (userName.length > 15) {
+            client.emit('login', 'invalid');
         }
         else if (users.some(user => user.userName === userName)) {
             client.emit('login', 'taken');
@@ -69,7 +73,7 @@ io.on('connection', (client) => {
             users.forEach(user => {
                 if (user.id !== users[userIndex].id) {
                     io.sockets.connected[user.id].emit('message', {
-                        userName: 'Server',
+                        userName: '',
                         message: `${users[userIndex].userName} was left the chat due to inactivity`,
                         time: new Date().getTime(),
                     });
@@ -82,12 +86,10 @@ io.on('connection', (client) => {
         users[userIndex].timer = null;
     };
     const emitMessage = (message, from, self = null) => {
-        console.log(users);
-        const sendList = self !== null ? users.slice(self, 1) : users;
-        console.log(sendList);
-        // console.log(sendList);
-        // console.log(self)
-        // console.log(sendList)
+        const sendList = users.slice();
+        if (self !== null) {
+            sendList.splice(self, 1);
+        }
         if (sendList.length > 0) {
             sendList.forEach(user => {
                 if (user.userName) {

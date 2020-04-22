@@ -35,6 +35,8 @@ io.on('connection', (client) => {
   client.on('login', (userName) => {
     if (!userName) {
       client.emit('login', 'empty');
+    } else if (userName.length > 10) {
+      client.emit('login', 'invalid')
     } else if (users.some(user => user.userName === userName)) {
       client.emit('login', 'taken');
     } else { 
@@ -51,15 +53,15 @@ io.on('connection', (client) => {
   client.on('logout', (userName) => {
     const userIndex = getUserIndex()
     if (users[userIndex].userName) {
+      client.emit('logout', 'success');
+      emitMessage(`${users[userIndex].userName} left the chat`, '', userIndex);
       users[userIndex].userName = null;
       if (users[userIndex].timer) {
         clearTimeout(users[userIndex].timer);
         users[userIndex].timer = null;
       }
-      client.emit('logout', 'success');
-      emitMessage(`${users[userIndex].userName} left the chat`, '', userIndex);
     } else {
-      client.emit('logout', 'failure');
+      client.emit('logout', 'failure'); 
     }
   });
 
@@ -74,11 +76,13 @@ io.on('connection', (client) => {
 
   const timedLogout = () => {
     const userIndex = getUserIndex();
+    users[userIndex].userName = null;
+    users[userIndex].timer = null;
     if (users[userIndex] && users[userIndex].userName) {
       users.forEach(user => {
-        if (user.id !== users[userIndex].id) {
+        if (user.userName && user.id !== users[userIndex].id) {
           io.sockets.connected[user.id].emit('message', {
-            userName: 'Server',
+            userName: '',
             message: `${users[userIndex].userName} was left the chat due to inactivity`,
             time: new Date().getTime(),
           });
@@ -87,8 +91,6 @@ io.on('connection', (client) => {
       // emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
     }
     client.emit('logout', 'inactivity');
-    users[userIndex].userName = null;
-    users[userIndex].timer = null;
   };
 
   const emitMessage = (message, from, self=null) => {
@@ -116,6 +118,7 @@ io.on('connection', (client) => {
         return i;
       }
     }
+    return null;
   }
   
   const logoutServerExit = () => {
