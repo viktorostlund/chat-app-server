@@ -1,6 +1,4 @@
-"use strict";
 // const http = require('http')
-Object.defineProperty(exports, "__esModule", { value: true });
 // const io = require('./socket.io')
 // const server = http.createServer(function(req, res){
 // });
@@ -32,14 +30,26 @@ io.on('connection', (client) => {
     //   logoutServerExit();
     // });
     client.on('message', (msg) => {
-        const userIndex = getUserIndex();
-        emitMessage(msg.message, msg.userName);
-        if (users[userIndex] && users[userIndex].timer) {
-            clearTimeout(users[userIndex].timer);
+        if (msg.message.length === 0 || msg.message.length > 200) {
+            client.emit("message", "invalid");
+            const userIndex = getUserIndex();
+            if (users[userIndex] && users[userIndex].timer) {
+                clearTimeout(users[userIndex].timer);
+            }
+            users[userIndex].timer = setTimeout(() => {
+                timedLogout();
+            }, timeout);
         }
-        users[userIndex].timer = setTimeout(() => {
-            timedLogout();
-        }, timeout);
+        else {
+            const userIndex = getUserIndex();
+            emitMessage(msg.message, msg.userName);
+            if (users[userIndex] && users[userIndex].timer) {
+                clearTimeout(users[userIndex].timer);
+            }
+            users[userIndex].timer = setTimeout(() => {
+                timedLogout();
+            }, timeout);
+        }
     });
     client.on('login', (userName) => {
         if (!userName) {
