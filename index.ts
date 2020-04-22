@@ -63,13 +63,8 @@ io.on('connection', (client) => {
   });
 
   client.on('disconnect', () => {
-    let userIndex;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === client.id) {
-        userIndex = i;
-      }
-    } 
-    emitMessage(`${users[userIndex].userName} was disconnected`, '');
+    const userIndex = getUserIndex();
+    emitMessage(`${users[userIndex].userName} was disconnected`, '', userIndex);
     if (users[userIndex].timer) {
       clearTimeout(users[userIndex].timer);
     }

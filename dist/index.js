@@ -71,29 +71,28 @@ io.on('connection', (client) => {
     const timedLogout = () => {
         const userIndex = getUserIndex();
         if (users[userIndex] && users[userIndex].userName) {
-            // users.forEach(user => {
-            //   if (user.id !== users[userIndex].id) {
-            //     io.sockets.connected[user.id].emit('message', {
-            //       userName: 'Server',
-            //       message: `${users[userIndex].userName} was left the chat due to inactivity`,
-            //       time: new Date().getTime(),
-            //     });
-            //   }
-            // });
-            emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
+            users.forEach(user => {
+                if (user.id !== users[userIndex].id) {
+                    io.sockets.connected[user.id].emit('message', {
+                        userName: 'Server',
+                        message: `${users[userIndex].userName} was left the chat due to inactivity`,
+                        time: new Date().getTime(),
+                    });
+                }
+            });
+            // emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
         }
         client.emit('logout', 'inactivity');
         users[userIndex].userName = null;
         users[userIndex].timer = null;
-        // if (users[userIndex].timer) {
-        //   clearTimeout(users[userIndex].timer);
-        // }
     };
     const emitMessage = (message, from, self = null) => {
         const sendList = self !== null ? users.slice(self, 1) : users;
         // console.log(sendList);
         sendList.forEach(user => {
             if (user.userName) {
+                console.log(user.id);
+                console.log(io.sockets.connected);
                 io.sockets.connected[user.id].emit('message', {
                     userName: from,
                     message,
