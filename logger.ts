@@ -1,8 +1,9 @@
-var bufferDuration = 1000;
+const bufferDuration = 1000;
 
-var clientPrototypeSend = null;
+let clientPrototypeSend = null;
+
 function makeLogger() {
-    var logger = {
+    const logger = {
 	stream : process.stdout,
 	socketLoggers : [],
 	authToken : null,
@@ -26,62 +27,32 @@ function makeLogger() {
 		logger.buf = [];
 	    }
 	},
-	monitor : function(socket) {
-	    var previousBroadcast = socket.broadcast;
-	    socket.broadcast = function(message, except) {
-		previousBroadcast.apply(socket, [message, except]);
-		var parsedMsg = JSON.parse(message);
-		logger.log(parsedMsg);
-	    };
-	    socket.on('connection', function(client) {
-		logger.log(['connect', client.id]);
-		if (!clientPrototypeSend)
-		    clientPrototypeSend = client.send;
-		client.send = function(msg) {
-		    clientPrototypeSend.apply(client, [msg]);
-		    // Don't log heartbeats
-		    if (msg.indexOf("~h~") == -1) {
-			var parsedMsg = JSON.parse(msg);
-			if (logger.responseFormatter)
-			    logger.log(["response", client.sessionId, logger.responseFormatter(parsedMsg)]);
-			else
-			    logger.log(["response", client.sessionId, parsedMsg]);
-		    }
+	manualActions : function(obj) {
+		if (obj.action === 'inactivity') {
+			logger.log(['inactivity logout', obj.id])
 		}
-		client.on('message', function(message) {
-		    try {
-			if (logger.logLevel === 0)
-			    return;
-			var theMessage = ['message'];
-			if (message === logger.authToken) {
-			    logger.socketLoggers.push(client);
-			    client.send = clientPrototypeSend;
-			    if (logger.socketLoggerSyncer)
-				client.send(logger.socketLoggerSyncer());
-			    return;
-			}
-			
-			theMessage.push(client.sessionId);
-			if (logger.logLevel == 2) {
-			    var parsedMsg = JSON.parse(message);
-			    if (logger.messageFormatter) 
-				theMessage.push(logger.messageFormatter(parsedMsg));
-			    else 
-				theMessage.push(parsedMsg);
-			}
-			logger.log(theMessage);
-		    } catch (ex) {
-			if (!logger.failSilently)
-			    throw ex;
-		    }
-		});
-		client.on('disconnect', function() {
- 		    var theSocketLogger = logger.socketLoggers.indexOf(client);
-		    if (theSocketLogger != -1)
-			logger.socketLoggers.splice(theSocketLogger, 1);
-	
-		    logger.log(['disconnect', client.sessionId]);
-		});
+		if (obj.action === 'server exit') {
+			logger.log(['server exit', obj.id])
+		}
+	},
+	monitor : function(socket) {
+	    socket.on('connection', function(client) {
+			logger.log(['connect', client.id]);
+			client.on('message', function(message) {
+				logger.log([client.id, message]);
+			});
+			client.on('disconnect', function() {
+		    	logger.log(['disconnect', client.id]);
+			});
+			client.on('login', function() {
+		    	logger.log(['login', client.id]);
+			});
+			client.on('logout', function() {
+		    	logger.log(['logout', client.id]);
+			});
+			client.on('inactive', function() {
+		    	logger.log(['inactivity disconnect', client.id]);
+			});
 	    });
 	},
 	
@@ -116,11 +87,9 @@ function currentTimeToString() {
 
     if (parseInt(month) < 10) {
 		month = '0' + month;
-		
 	}
     if (parseInt(day) < 10) {
 		day = '0' + day;
-		
 	}
     if (parseInt(hours) < 10) {
 		hours = '0' + hours;
@@ -137,6 +106,7 @@ function currentTimeToString() {
     if (parseInt(ms) < 100) {
 		ms = '0' + ms;
 	}
+
     const timestamp = year + "/" + month + "/" + day + ":" +  hours 
 	+ ":" + minutes + ":" + seconds + "." + ms;
     return timestamp;

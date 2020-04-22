@@ -1,11 +1,13 @@
+"use strict";
 // const http = require('http')
+Object.defineProperty(exports, "__esModule", { value: true });
 // const io = require('./socket.io')
 // const server = http.createServer(function(req, res){
 // });
 // server.listen(8080);
 // var socket = io.listen(server);
 // socket.on('connection', function(client){
-//     client.on('message', function(message) { 
+//     client.on('message', function(message) {
 // 	});
 //     client.on('disconnect', function() {
 //     });
@@ -17,15 +19,18 @@ const logger = require('./logger.ts').defaultLogger;
 const port = 3001;
 const users = [];
 const timeout = 10000;
-// app.get('/', (req, res) => {
-//   res.send('<h1>Hello world</h1>');
-// });
+exports.server = http.listen(port);
 io.on('connection', (client) => {
     users.push({ id: client.id, userName: null, timer: null });
-    process.setMaxListeners(100);
-    process.removeAllListeners();
-    process.on('SIGINT', () => logoutServerExit());
-    process.on('SIGTERM', () => logoutServerExit());
+    process.on('SIGINT', () => {
+        logoutServerExit();
+        // client.emit('logout', 'error');
+    });
+    // process.on('SIGTERM', () => {
+    //   logger.manualActions({action: 'server exit', id: client.id});
+    //   client.emit('logout', 'error');
+    //   logoutServerExit();
+    // });
     client.on('message', (msg) => {
         const userIndex = getUserIndex();
         emitMessage(msg.message, msg.userName);
@@ -43,7 +48,7 @@ io.on('connection', (client) => {
         else if (userName.length > 10) {
             client.emit('login', 'invalid');
         }
-        else if (users.some(user => user.userName === userName)) {
+        else if (users.some((user) => user.userName === userName)) {
             client.emit('login', 'taken');
         }
         else {
@@ -55,7 +60,6 @@ io.on('connection', (client) => {
             client.emit('login', 'success');
             emitMessage(`${users[i].userName} entered the chat`, '');
         }
-        ;
     });
     client.on('logout', (userName) => {
         const userIndex = getUserIndex();
@@ -82,14 +86,12 @@ io.on('connection', (client) => {
     });
     const timedLogout = () => {
         const userIndex = getUserIndex();
-        users[userIndex].userName = null;
-        users[userIndex].timer = null;
         if (users[userIndex] && users[userIndex].userName) {
-            users.forEach(user => {
+            users.forEach((user) => {
                 if (user.userName && user.id !== users[userIndex].id) {
                     io.sockets.connected[user.id].emit('message', {
                         userName: '',
-                        message: `${users[userIndex].userName} was left the chat due to inactivity`,
+                        message: `${users[userIndex].userName} left chat due to inactivity`,
                         time: new Date().getTime(),
                     });
                 }
@@ -97,6 +99,9 @@ io.on('connection', (client) => {
             // emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
         }
         client.emit('logout', 'inactivity');
+        logger.manualActions({ action: 'inactivity', id: users[userIndex].id });
+        users[userIndex].userName = null;
+        users[userIndex].timer = null;
     };
     const emitMessage = (message, from, self = null) => {
         const sendList = users.slice();
@@ -104,7 +109,7 @@ io.on('connection', (client) => {
             sendList.splice(self, 1);
         }
         if (sendList.length > 0) {
-            sendList.forEach(user => {
+            sendList.forEach((user) => {
                 if (user.userName) {
                     io.sockets.connected[user.id].emit('message', {
                         userName: from,
@@ -125,11 +130,16 @@ io.on('connection', (client) => {
         return null;
     };
     const logoutServerExit = () => {
-        client.emit('logout', 'error');
-        process.removeAllListeners();
+        if (Object.keys(io.sockets.connected).length > 0) {
+            throw new Error('Unexpected server error while serving clients');
+        }
+        process.exit();
+        // io.sockets.connected.forEach(socket => {
+        //   socket.disconnect();
+        // });
+        // server.close();
     };
 });
-exports.server = http.listen(port);
 logger.logLevel = 2;
 logger.authToken = 'my_secret_token_for_the_dashboard_client';
 logger.monitor(io);
