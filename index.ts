@@ -1,6 +1,6 @@
 const app = require('express')();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+let io = require('socket.io')(http);
 const logger = require('./logger.ts').logger;
 
 const port = 3001;
@@ -15,15 +15,15 @@ io.on('connection', (client) => {
 
   process.on('SIGINT', () => {
     logoutServerExit();
-  })
-  
+  });
+
   process.on('SIGTERM', () => {
     logoutServerExit();
   });
 
   client.on('message', (msg) => {
     if (msg.message.length === 0 || msg.message.length > 200) {
-      client.emit("message", "invalid");
+      client.emit('message', 'invalid');
       const userIndex = getUserIndex();
       if (users[userIndex] && users[userIndex].timer) {
         clearTimeout(users[userIndex].timer);
@@ -100,7 +100,7 @@ io.on('connection', (client) => {
       // emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
     }
     client.emit('logout', 'inactivity');
-    logger.manualActions({ action: 'inactivity', id: users[userIndex].id});
+    logger.manualActions({ action: 'inactivity', id: users[userIndex].id });
     users[userIndex].userName = null;
     users[userIndex].timer = null;
   };
@@ -137,7 +137,7 @@ io.on('connection', (client) => {
     if (Object.keys(io.sockets.connected).length > 0) {
       throw new Error('Unexpected server error while serving clients');
     }
-    process.exit()
+    process.exit();
   };
 });
 

@@ -7,7 +7,7 @@
     "start": "tsc && nodemon index.ts",
     "test": "mocha test",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx . --ignore-pattern dist/ --color",
-    "format": "prettier --write index.ts"
+    "format": "prettier --write index.ts ./test/index.test.ts"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/viktorostlund/chat-app-server#readme",
   "dependencies": {
+    "@types/mocha": "^7.0.2",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",

@@ -1,12 +1,11 @@
 const app = require('express')();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-const logger = require('./logger.ts').defaultLogger;
-require('dotenv').load();
+let io = require('socket.io')(http);
+const logger = require('./logger.ts').logger;
 const port = 3001;
 const users = [];
 const timeout = 10000;
-console.log(process.env.LOGGER_AUTH);
+// const LOGGER_AUTH = 'my_secret_token';
 exports.server = http.listen(port);
 io.on('connection', (client) => {
     users.push({ id: client.id, userName: null, timer: null });
@@ -18,7 +17,7 @@ io.on('connection', (client) => {
     });
     client.on('message', (msg) => {
         if (msg.message.length === 0 || msg.message.length > 200) {
-            client.emit("message", "invalid");
+            client.emit('message', 'invalid');
             const userIndex = getUserIndex();
             if (users[userIndex] && users[userIndex].timer) {
                 clearTimeout(users[userIndex].timer);
@@ -134,6 +133,6 @@ io.on('connection', (client) => {
     };
 });
 logger.logLevel = 2;
-logger.authToken = 'my_secret_token_for_the_dashboard_client';
+// logger.authToken = LOGGER_AUTH;
 logger.monitor(io);
 //# sourceMappingURL=index.js.map
