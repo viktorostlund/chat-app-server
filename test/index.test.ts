@@ -2,7 +2,8 @@ const chai = require('chai');
 // const mocha = require('mocha')
 const should = chai.should();
 const testport = 3001;
-const helpers = require('../helpers.ts');
+const testRestartTimer = require('../utils.ts').restartDisconnectTimer;
+const testGetIndex = require('../utils.ts').getUserIndex;
 
 const testio = require('socket.io-client');
 
@@ -92,19 +93,37 @@ describe('Client emits should be picked up correctly by server', function () {
       client.emit('login', 'Viktor');
     });
   });
+
+  it('other clients should receive messages', function (done) {
+    const client = testio.connect(`http://localhost:${testport}`, options);
+    const client2 = testio.connect(`http://localhost:${testport}`, options);
+    client.once('connect', () => {
+      client.once('message', () => {
+        client.once('message', (response) => {
+          response.message.should.equal(messageObj.message);
+          client.disconnect();
+          client2.disconnect();
+          done();
+        });
+        client2.once('connect', () => {});
+        client2.emit('login', 'Viktor');
+      });
+      client.emit('login', 'Amanda');
+    });
+  });
+
 });
 
 describe('Helper functions', function () {
-  const mockUsers = [{ id: '10', userName: 'Viktor', timer: null }, { id: '11', userName: 'Amanda', timer: null }];
-  it('', function (done) {
-    helpers.getUserIndex('11', mockUsers).should.equal(1);
-  });
-});
 
-// describe('Array', function() {
-//   describe('#indexOf()', function() {
-//     it('should return -1 when the value is not present', function() {
-//       assert.equal([1, 2, 3].indexOf(4), -1);
-//     });
-//   });
-// });
+  const mockUsers = [{ id: '10', userName: 'Viktor', timer: null }, { id: '11', userName: 'Amanda', timer: null }];
+  it('getUserIndex should return correct index', function (done) {
+    testGetIndex('11', mockUsers).should.equal(1);
+    done();
+  });
+
+  it('restartDisconnectTimer should restart timer', function (done) {
+    testRestartTimer({ timer: {} }, done, 10);
+  });
+
+});

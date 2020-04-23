@@ -1,10 +1,17 @@
-const bufferDuration = 1000;
+const fs = require('fs');
+const util = require('util');
+const readFile = fs.readFile;
+const writeFile = fs.writeFile;
+// const readFile = util.promisify(fs.readFile);
+// const writeFile = util.promisify(fs.writeFile);
 
+const bufferDuration = 1000;
 let clientPrototypeSend = null;
 
 function makeLogger() {
     const logger = {
 	stream : process.stdout,
+	consoleLog: console.log,
 	socketLoggers : [],
 	authToken : null,
 	logLevel : 0,
@@ -19,6 +26,30 @@ function makeLogger() {
 		    return JSON.stringify(obj) + '\n';
 		});
 		logger.stream.write(newArr.join(''), 'utf8');
+		readFile('./log.json', 'utf8', (err, result) => {
+			const parsed = JSON.parse(result);
+			// console.log(parsed);
+			if (parsed === null) {
+				// writeFile('./log.json', JSON.stringify(newArr.join('') + '\n'), 'utf8', () => {console.log('Ja')});
+			} else {
+				let newString = '[';
+				for (i = 0; i < parsed.length; i++) {
+					newString += JSON.stringify(parsed[i]) + ',';
+				}
+				newString += `${newArr[0]}]`;
+				// console.log(newString)
+				// console.log(newArray);
+				// console.log(newArr[0]);
+				// const copy = parsed.push('fsdf');
+				// console.log(copy);
+				// console.log(parsed);
+				// console.log(JSON.parse(newArr[0]))
+				// console.log(parsed.push('sdfdf'));
+				writeFile('./log.json', newString, 'utf8', () => {console.log('Ja')});
+			}
+		});
+		// await writeFile('./log.json', currentLog.concat(newArr.join('')));
+		// logFile.writeFile('loop.json', "id :" + i + " square :" + i * i);
 		if (logger.socketLoggers.length > 0) {
 		    const count = logger.socketLoggers.length;
 		    for (var i = 0; i < count; ++i)

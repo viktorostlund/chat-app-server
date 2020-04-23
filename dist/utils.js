@@ -1,4 +1,3 @@
-const time = 15000;
 const getUserIndex = (clientId, users) => {
     // let userIndex;
     for (let i = 0; i < users.length; i++) {
@@ -8,7 +7,7 @@ const getUserIndex = (clientId, users) => {
     }
     return null;
 };
-const restartDisconnectTimer = (user, cb) => {
+const restartDisconnectTimer = (user, cb, time = 60000) => {
     if (user && user.timer) {
         clearTimeout(user.timer);
     }
@@ -16,5 +15,6 @@ const restartDisconnectTimer = (user, cb) => {
         cb();
     }, time);
 };
-exports.utils = { time, getUserIndex, restartDisconnectTimer };
-//# sourceMappingURL=helpers.js.map
+exports.getUserIndex = getUserIndex;
+exports.restartDisconnectTimer = restartDisconnectTimer;
+//# sourceMappingURL=utils.js.map
