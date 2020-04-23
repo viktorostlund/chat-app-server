@@ -1,34 +1,21 @@
-// const http = require('http')
-// const io = require('./socket.io')
-// const server = http.createServer(function(req, res){
-// });
-// server.listen(8080);
-// var socket = io.listen(server);
-// socket.on('connection', function(client){
-//     client.on('message', function(message) {
-// 	});
-//     client.on('disconnect', function() {
-//     });
-// });
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const logger = require('./logger.ts').defaultLogger;
+require('dotenv').load();
 const port = 3001;
 const users = [];
 const timeout = 10000;
+console.log(process.env.LOGGER_AUTH);
 exports.server = http.listen(port);
 io.on('connection', (client) => {
     users.push({ id: client.id, userName: null, timer: null });
     process.on('SIGINT', () => {
         logoutServerExit();
-        // client.emit('logout', 'error');
     });
-    // process.on('SIGTERM', () => {
-    //   logger.manualActions({action: 'server exit', id: client.id});
-    //   client.emit('logout', 'error');
-    //   logoutServerExit();
-    // });
+    process.on('SIGTERM', () => {
+        logoutServerExit();
+    });
     client.on('message', (msg) => {
         if (msg.message.length === 0 || msg.message.length > 200) {
             client.emit("message", "invalid");
@@ -144,10 +131,6 @@ io.on('connection', (client) => {
             throw new Error('Unexpected server error while serving clients');
         }
         process.exit();
-        // io.sockets.connected.forEach(socket => {
-        //   socket.disconnect();
-        // });
-        // server.close();
     };
 });
 logger.logLevel = 2;

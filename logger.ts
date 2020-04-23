@@ -15,12 +15,12 @@ function makeLogger() {
 	socketLoggerSyncer : null,
 	flushBuffer : function() {
 	    if (logger.buf.length) {
-		var newArr = logger.buf.map(function(obj) {
+		const newArr = logger.buf.map(function(obj) {
 		    return JSON.stringify(obj) + '\n';
 		});
 		logger.stream.write(newArr.join(''), 'utf8');
 		if (logger.socketLoggers.length > 0) {
-		    var count = logger.socketLoggers.length;
+		    const count = logger.socketLoggers.length;
 		    for (var i = 0; i < count; ++i)
 			logger.socketLoggers[i].send(JSON.stringify(logger.buf));
 		}
@@ -112,5 +112,4 @@ function currentTimeToString() {
     return timestamp;
 }
 
-exports.defaultLogger = makeLogger();
-exports.newLogger = makeLogger;
+exports.logger = makeLogger();

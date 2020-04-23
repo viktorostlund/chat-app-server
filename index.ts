@@ -1,11 +1,12 @@
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const logger = require('./logger.ts').defaultLogger;
+const logger = require('./logger.ts').logger;
 
 const port = 3001;
 const users = [];
 const timeout = 10000;
+// const LOGGER_AUTH = 'my_secret_token';
 
 exports.server = http.listen(port);
 
@@ -141,5 +142,5 @@ io.on('connection', (client) => {
 });
 
 logger.logLevel = 2;
-logger.authToken = 'my_secret_token_for_the_dashboard_client';
+// logger.authToken = LOGGER_AUTH;
 logger.monitor(io);
