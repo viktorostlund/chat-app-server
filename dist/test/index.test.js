@@ -2,8 +2,9 @@ const chai = require('chai');
 // const mocha = require('mocha')
 const should = chai.should();
 const testport = 3001;
-const mockio = require('socket.mockio-client');
-describe('Client socket transmissions should result in correct response from server, ', function () {
+const helpers = require('../helpers.ts');
+const testio = require('socket.io-client');
+describe('Client emits should be picked up correctly by server', function () {
     let server, options = {
         transports: ['websocket'],
         'force new connection': true,
@@ -22,13 +23,13 @@ describe('Client socket transmissions should result in correct response from ser
         server = require('../index.ts').server;
         done();
     });
-    it('client should not be connected by default', function (done) {
-        const client = mockio.connect(`http://localhost:${port}`, options);
+    it('client should be disconnected by default', function (done) {
+        const client = testio.connect(`http://localhost:${testport}`, options);
         client.connected.should.equal(false);
         done();
     });
     it('client should connect', function (done) {
-        const client = mockio.connect(`http://localhost:${port}`, options);
+        const client = testio.connect(`http://localhost:${testport}`, options);
         client.once('connect', function () {
             client.connected.should.equal(true);
             client.disconnect();
@@ -36,15 +37,15 @@ describe('Client socket transmissions should result in correct response from ser
         });
     });
     it('client should disconnect', function (done) {
-        const client = mockio.connect(`http://localhost:${port}`, options);
+        const client = testio.connect(`http://localhost:${testport}`, options);
         client.once('connect', function () {
             client.disconnect();
             client.connected.should.equal(false);
             done();
         });
     });
-    it('server should send out message when client logs in', function (done) {
-        const client = mockio.connect(`http://localhost:${port}`, options);
+    it('message should be sent when logged in', function (done) {
+        const client = testio.connect(`http://localhost:${testport}`, options);
         client.once('connect', function () {
             client.once('message', function (response) {
                 response.message.should.equal(messageObj.message);
@@ -55,7 +56,7 @@ describe('Client socket transmissions should result in correct response from ser
         });
     });
     it('server should send out message when client logs in', function (done) {
-        const client = mockio.connect(`http://localhost:${port}`, options);
+        const client = testio.connect(`http://localhost:${testport}`, options);
         client.once('connect', function () {
             client.once('message', function (response) {
                 response.message.should.equal(messageObj.message);
@@ -65,110 +66,26 @@ describe('Client socket transmissions should result in correct response from ser
             client.emit('login', 'Viktor');
         });
     });
-    // it("when a client logs in it should get a message back", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     // client.once("message", function (response) {
-    //     //   response.message.should.equal(messageObj.message);
-    //       client.disconnect();
-    //       done();
-    //     // });
-    //     // client.emit("login", "Viktor")
-    //       // client.emit("message", messageObj);
-    //   });
-    // });
-    // it("when a client logs in it should get a message back", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     // client.once("message", function (response) {
-    //     //   response.message.should.equal(messageObj.message);
-    //       client.disconnect();
-    //       done();
-    //     // });
-    //     // client.emit("login", "Viktor")
-    //       // client.emit("message", messageObj);
-    //   });
-    // });
-    // it("incoming messages should be emmitted from the server", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     client.once("message", function () {
-    //       client.once("message", function (response) {
-    //         response.message.should.equal(messageObj2.message);
-    //         client.disconnect();
-    //         done();
-    //       });
-    //       client.emit("message", messageObj2)
-    //     });
-    //     client.emit("login", "Viktor");
-    //   });
-    // });
-    // it("login attempt with empty username should result in 'empty' response", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     client.once("login", function (message) {
-    //         message.should.equal("empty");
-    //         client.disconnect();
-    //         done();
-    //     });
-    //     client.emit("login", "");
-    //   });
-    // });
-    // it("login attempt with valid username should result in 'success' response", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     client.once("login", function (message) {
-    //         message.should.equal("success");
-    //         client.disconnect();
-    //         done();
-    //     });
-    //     client.emit("login", "Viktor");
-    //   });
-    // });
-    // it("login attempt with taken username should result in 'taken' response", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     client.emit("login", "Viktor");
-    //     client2.once("connect", function () {
-    //       client2.once("login", function (message) {
-    //           message.should.equal("taken");
-    //           client.disconnect();
-    //           client2.disconnect();
-    //           done();
-    //       });
-    //       client2.emit("login", "Viktor");
-    //     });
-    //   });
-    // });
-    // it("logout attempt from a client that is not logged in should get a 'failure' response", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //       client.once("logout", function (response) {
-    //           response.should.equal("failure");
-    //           client.disconnect();
-    //           done();
-    //       });
-    //       client.emit("logout", "Hector");
-    //   });
-    // });
-    // it("logout attempt from a logged in client should get a 'success' response", function (done) {
-    //   const client = mockio.connect(`http://localhost:${port}`, options);
-    //   client.once("connect", function () {
-    //     client.emit("login", "Viktor")
-    //       client.once("logout", function (response) {
-    //           response.should.equal("success");
-    //           client.disconnect();
-    //           done();
-    //       });
-    //       client.emit("logout", "Viktor");
-    //   });
-    // });
-    // Test that if one client is logged out, other clients gets message about it
-    // Test that if one client logs in, other clients gets message about it
-    // Test that messages are only sent to logged in clients
-    // Test that timed logouts work
-    // Test that if one client is disconnected, it cannot log in anymore
-    // Test that if one client is disconnected, other clients gets message about it
+    it('message should be sent out', function (done) {
+        const client = testio.connect(`http://localhost:${testport}`, options);
+        client.once('connect', function () {
+            client.once('message', function (response) {
+                client.once('message', function (response) {
+                    response.message.should.equal(messageObj2.message);
+                    client.disconnect();
+                    done();
+                });
+                client.emit('message', messageObj2);
+            });
+            client.emit('login', 'Viktor');
+        });
+    });
+});
+describe('Helper functions', function () {
+    const mockUsers = [{ id: '10', userName: 'Viktor', timer: null }, { id: '11', userName: 'Amanda', timer: null }];
+    it('', function (done) {
+        helpers.getUserIndex('11', mockUsers).should.equal(1);
+    });
 });
 // describe('Array', function() {
 //   describe('#indexOf()', function() {

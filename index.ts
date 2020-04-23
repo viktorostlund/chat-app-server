@@ -2,6 +2,7 @@ const app = require('express')();
 const http = require('http').createServer(app);
 let io = require('socket.io')(http);
 const logger = require('./logger.ts').logger;
+const getIndex = require('./helpers.ts').getUserIndex;
 
 const port = 3001;
 const users = [];
@@ -9,6 +10,8 @@ const timeout = 10000;
 // const LOGGER_AUTH = 'my_secret_token';
 
 exports.server = http.listen(port);
+
+
 
 io.on('connection', (client) => {
   users.push({ id: client.id, userName: null, timer: null });
@@ -24,7 +27,7 @@ io.on('connection', (client) => {
   client.on('message', (msg) => {
     if (msg.message.length === 0 || msg.message.length > 200) {
       client.emit('message', 'invalid');
-      const userIndex = getUserIndex();
+      const userIndex = getIndex(client.id, users);
       if (users[userIndex] && users[userIndex].timer) {
         clearTimeout(users[userIndex].timer);
       }
@@ -32,7 +35,7 @@ io.on('connection', (client) => {
         timedLogout();
       }, timeout);
     } else {
-      const userIndex = getUserIndex();
+      const userIndex = getIndex(client.id, users);
       emitMessage(msg.message, msg.userName);
       if (users[userIndex] && users[userIndex].timer) {
         clearTimeout(users[userIndex].timer);
@@ -51,7 +54,7 @@ io.on('connection', (client) => {
     } else if (users.some((user) => user.userName === userName)) {
       client.emit('login', 'taken');
     } else {
-      const i = getUserIndex();
+      const i = getIndex(client.id, users);
       users[i].timer = setTimeout(() => {
         timedLogout();
       }, timeout);
@@ -62,7 +65,7 @@ io.on('connection', (client) => {
   });
 
   client.on('logout', (userName) => {
-    const userIndex = getUserIndex();
+    const userIndex = getIndex(client.id, users);
     if (users[userIndex].userName) {
       client.emit('logout', 'success');
       emitMessage(`${users[userIndex].userName} left the chat`, '', userIndex);
@@ -77,7 +80,7 @@ io.on('connection', (client) => {
   });
 
   client.on('disconnect', () => {
-    const userIndex = getUserIndex();
+    const userIndex = getIndex(client.id, users);
     emitMessage(`${users[userIndex].userName} was disconnected`, '', userIndex);
     if (users[userIndex].timer) {
       clearTimeout(users[userIndex].timer);
@@ -86,7 +89,7 @@ io.on('connection', (client) => {
   });
 
   const timedLogout = () => {
-    const userIndex = getUserIndex();
+    const userIndex = getIndex(client.id, users);
     if (users[userIndex] && users[userIndex].userName) {
       users.forEach((user) => {
         if (user.userName && user.id !== users[userIndex].id) {
@@ -121,16 +124,6 @@ io.on('connection', (client) => {
         }
       });
     }
-  };
-
-  const getUserIndex = () => {
-    let userIndex;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === client.id) {
-        return i;
-      }
-    }
-    return null;
   };
 
   const logoutServerExit = () => {
