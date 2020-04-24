@@ -51,8 +51,8 @@ socket.on('connection', (client) => {
     });
     client.on('message', (msg) => {
         const i = getIndex(client.id, users);
-        if (msg.message.length === 0 || msg.message.length > 200) {
-            client.emit('message', 'invalid');
+        if (msg.message.length === 0 || msg.message.length > 100) {
+            client.emit('message', Object.assign(Object.assign({}, msg), { status: 'invalid' }));
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
         }
         else {

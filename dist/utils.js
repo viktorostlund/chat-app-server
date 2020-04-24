@@ -6,7 +6,7 @@ const getUserIndex = (clientId, users) => {
     }
     return null;
 };
-const restartDisconnectTimer = (user, cb, time = 60000) => {
+const restartDisconnectTimer = (user, cb, time) => {
     if (user && user.timer) {
         clearTimeout(user.timer);
     }

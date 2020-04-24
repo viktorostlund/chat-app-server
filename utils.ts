@@ -16,7 +16,7 @@ const getUserIndex = (clientId: string, users: Array<User>): number => {
 const restartDisconnectTimer = (
   user: User,
   cb: Function,
-  time = 60000
+  time: number
 ): object => {
   if (user && user.timer) {
     clearTimeout(user.timer);
