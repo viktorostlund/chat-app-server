@@ -10,15 +10,16 @@ const users = [];
 exports.server = http.listen(port);
 socket.on('connection', (client) => {
     users.push({ id: client.id, userName: null, timer: null });
-    const emitMessage = (message, from, self = null) => {
+    const emitMessage = (message, from, id, sendToSelf) => {
         const sendList = users.slice();
-        if (self !== null) {
-            sendList.splice(self, 1);
+        if (!sendToSelf) {
+            sendList.splice(id, 1);
         }
         if (sendList.length > 0) {
             sendList.forEach((user) => {
                 if (user.userName) {
                     socket.sockets.connected[user.id].emit('message', {
+                        status: 'sent from server',
                         userName: from,
                         message,
                         time: new Date().getTime(),
@@ -36,7 +37,7 @@ socket.on('connection', (client) => {
     const timedLogout = () => {
         const userIndex = getIndex(client.id, users);
         if (users[userIndex] && users[userIndex].userName) {
-            emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
+            emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex, false);
         }
         client.emit('logout', 'inactivity');
         logger.manualActions({ action: 'inactivity', id: users[userIndex].id });
@@ -56,7 +57,7 @@ socket.on('connection', (client) => {
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
         }
         else {
-            emitMessage(msg.message, msg.userName);
+            emitMessage(msg.message, msg.userName, i, true);
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
         }
     });
@@ -75,18 +76,18 @@ socket.on('connection', (client) => {
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
             users[i].userName = userName;
             client.emit('login', 'success');
-            emitMessage(`${users[i].userName} entered the chat`, '');
+            emitMessage(`${users[i].userName} entered the chat`, '', i, true);
         }
     });
     client.on('logout', () => {
-        const userIndex = getIndex(client.id, users);
-        if (users[userIndex].userName) {
+        const i = getIndex(client.id, users);
+        if (users[i].userName) {
             client.emit('logout', 'success');
-            emitMessage(`${users[userIndex].userName} left the chat`, '', userIndex);
-            users[userIndex].userName = null;
-            if (users[userIndex].timer) {
-                clearTimeout(users[userIndex].timer);
-                users[userIndex].timer = null;
+            emitMessage(`${users[i].userName} left the chat`, '', i, false);
+            users[i].userName = null;
+            if (users[i].timer) {
+                clearTimeout(users[i].timer);
+                users[i].timer = null;
             }
         }
         else {
@@ -94,12 +95,12 @@ socket.on('connection', (client) => {
         }
     });
     client.on('disconnect', () => {
-        const userIndex = getIndex(client.id, users);
-        emitMessage(`${users[userIndex].userName} was disconnected`, '', userIndex);
-        if (users[userIndex].timer) {
-            clearTimeout(users[userIndex].timer);
+        const i = getIndex(client.id, users);
+        emitMessage(`${users[i].userName} was disconnected`, '', i, false);
+        if (users[i].timer) {
+            clearTimeout(users[i].timer);
         }
-        users.splice(userIndex, 1);
+        users.splice(i, 1);
     });
 });
 logger.monitor(socket);

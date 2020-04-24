@@ -66,10 +66,10 @@ socket.on('connection', (client) => {
   });
 
   interface Message {
-      status: string,
-      userName: string,
-      message: string,
-      time: string,
+    status: string;
+    userName: string;
+    message: string;
+    time: string;
   }
 
   client.on('message', (msg: Message) => {
