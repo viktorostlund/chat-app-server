@@ -38,7 +38,8 @@ socket.on('connection', (client) => {
                 userName: '',
                 id: i,
                 sendToSelf: false,
-                time: new Date().getTime()
+                time: new Date().getTime(),
+                sendToOthers: true,
             });
         }
         client.emit('logout', 'inactivity');
@@ -59,47 +60,53 @@ socket.on('connection', (client) => {
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
         }
         else {
-            emitMessage(Object.assign(Object.assign({}, message), { status: 'success', time: new Date().getTime(), id: i, sendToSelf: true }));
+            emitMessage(Object.assign(Object.assign({}, message), { status: 'success', time: new Date().getTime(), id: i, sendToSelf: true, sendToOthers: true }));
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
         }
     });
     client.on('login', (userName) => {
+        const i = getIndex(client.id, users);
+        users[i].userName = userName;
+        const newMessage = {
+            status: 'success',
+            message: `${users[i].userName} entered the chat`,
+            userName: '',
+            id: i,
+            time: new Date().getTime(),
+            sendToSelf: true,
+            sendToOthers: true,
+        };
         if (!userName) {
-            client.emit('login', 'empty');
+            newMessage.status = 'empty';
         }
         else if (userName.length > 10) {
-            client.emit('login', 'invalid');
+            newMessage.status = 'invalid';
         }
         else if (users.some((user) => user.userName === userName)) {
-            client.emit('login', 'taken');
+            newMessage.status = 'taken';
         }
         else {
-            const i = getIndex(client.id, users);
-            users[i].timer = restartTimer(users[i], timedLogout, timeout);
-            users[i].userName = userName;
             client.emit('login', 'success');
-            emitMessage({
-                status: 'success',
-                message: `${users[i].userName} entered the chat`,
-                userName: users[i].userName,
-                id: i,
-                time: new Date().getTime(),
-                sendToSelf: true
-            });
+            users[i].timer = restartTimer(users[i], timedLogout, timeout);
+            emitMessage(newMessage);
         }
+        console.log(newMessage);
+        console.log(users);
     });
     client.on('logout', () => {
         const i = getIndex(client.id, users);
+        const newMessage = {
+            status: 'success',
+            message: `${users[i].userName} left the chat`,
+            userName: '',
+            id: i,
+            time: new Date().getTime(),
+            sendToSelf: false,
+            sendToOthers: true,
+        };
         if (users[i].userName) {
             client.emit('logout', 'success');
-            emitMessage({
-                status: 'success',
-                message: `${users[i].userName} left the chat`,
-                userName: '',
-                id: i,
-                time: new Date().getTime(),
-                sendToSelf: false
-            });
+            emitMessage(newMessage);
             users[i].userName = null;
             if (users[i].timer) {
                 clearTimeout(users[i].timer);
@@ -107,7 +114,7 @@ socket.on('connection', (client) => {
             }
         }
         else {
-            client.emit('logout', 'failure');
+            client.emit(Object.assign(Object.assign({}, newMessage), { status: 'failure' }));
         }
     });
     client.on('disconnect', () => {
@@ -118,7 +125,8 @@ socket.on('connection', (client) => {
             userName: '',
             id: i,
             time: new Date().getTime(),
-            sendToSelf: false
+            sendToSelf: false,
+            sendToOthers: true,
         });
         if (users[i].timer) {
             clearTimeout(users[i].timer);
