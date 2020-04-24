@@ -1,21 +1,55 @@
-const fs = require('fs');
-const readFile = fs.readFile;
-const writeFile = fs.writeFile;
+import fs = require('fs');
+
+const { writeFile, readFile } = fs;
 
 const bufferDuration = 1000;
-let clientPrototypeSend = null;
 
-function makeLogger() {
+function currentTimeToString(): string {
+  const currentTime = new Date();
+  const year = currentTime.getFullYear().toString();
+  let month = (currentTime.getMonth() + 1).toString();
+  let day = currentTime.getDate().toString();
+  let hours = currentTime.getHours().toString();
+  let minutes = currentTime.getMinutes().toString();
+  let seconds = currentTime.getSeconds().toString();
+  let ms = currentTime.getMilliseconds().toString();
+
+  if (parseInt(month, 10) < 10) {
+    month = `0${month}`;
+  }
+  if (parseInt(day, 10) < 10) {
+    day = `0${day}`;
+  }
+  if (parseInt(hours, 10) < 10) {
+    hours = `0${hours}`;
+  }
+  if (parseInt(minutes, 10) < 10) {
+    minutes = `0${minutes}`;
+  }
+  if (parseInt(seconds, 10) < 10) {
+    seconds = `0${seconds}`;
+  }
+  if (parseInt(ms, 10) < 10) {
+    ms = `00${ms}`;
+  }
+  if (parseInt(ms, 10) < 100) {
+    ms = `0${ms}`;
+  }
+
+  const timestamp = `${year}/${month}/${day}:${hours}:${minutes}:${seconds}.${ms}`;
+  return timestamp;
+}
+
+function makeLogger(): object {
   const logger = {
     stream: process.stdout,
-    consoleLog: console.log,
     socketLoggers: [],
     failSilently: true,
     buf: [],
-    flushBuffer: function () {
+    flushBuffer: (): void => {
       if (logger.buf.length) {
-        const newArr = logger.buf.map(function (obj) {
-          return JSON.stringify(obj) + '\n';
+        const newArr = logger.buf.map((obj) => {
+          return `${JSON.stringify(obj)}\n`;
         });
         logger.stream.write(newArr.join(''), 'utf8');
         readFile('./log.json', 'utf8', (err, result) => {
@@ -24,8 +58,8 @@ function makeLogger() {
           if (parsed && parsed.length === 0) {
             newString += `    ${newArr[0]}]`;
           } else if (parsed) {
-            for (i = 0; i < parsed.length; i++) {
-              newString += '    ' + JSON.stringify(parsed[i]) + ',\n';
+            for (let i = 0; i < parsed.length; i += 1) {
+              newString += `    ${JSON.stringify(parsed[i])},\n`;
             }
             newString += `    ${newArr[0]}]`;
           }
@@ -33,13 +67,13 @@ function makeLogger() {
         });
         if (logger.socketLoggers.length > 0) {
           const count = logger.socketLoggers.length;
-          for (var i = 0; i < count; ++i)
+          for (let i = 0; i < count; i += 1)
             logger.socketLoggers[i].send(JSON.stringify(logger.buf));
         }
         logger.buf = [];
       }
     },
-    manualActions: function (obj) {
+    manualActions: (obj): void => {
       if (obj.action === 'inactivity') {
         logger.log(['inactivity logout', obj.id]);
       }
@@ -47,28 +81,28 @@ function makeLogger() {
         logger.log(['server exit', obj.id]);
       }
     },
-    monitor: function (socket) {
-      socket.on('connection', function (client) {
+    monitor: (socket): void => {
+      socket.on('connection', (client): void => {
         logger.log(['connect', client.id]);
-        client.on('message', function (message) {
+        client.on('message', (message) => {
           logger.log([client.id, message]);
         });
-        client.on('disconnect', function () {
+        client.on('disconnect', () => {
           logger.log(['disconnect', client.id]);
         });
-        client.on('login', function () {
+        client.on('login', () => {
           logger.log(['login', client.id]);
         });
-        client.on('logout', function () {
+        client.on('logout', () => {
           logger.log(['logout', client.id]);
         });
-        client.on('inactive', function () {
+        client.on('inactive', () => {
           logger.log(['inactivity disconnect', client.id]);
         });
       });
     },
 
-    log: function (msg) {
+    log: (msg): void => {
       try {
         if (!Array.isArray(msg)) return;
 
@@ -82,55 +116,6 @@ function makeLogger() {
   };
   setInterval(logger.flushBuffer, bufferDuration);
   return logger;
-}
-
-function currentTimeToString() {
-  var currentTime = new Date();
-  let year = currentTime.getFullYear().toString();
-  let month = (currentTime.getMonth() + 1).toString();
-  let day = currentTime.getDate().toString();
-  let hours = currentTime.getHours().toString();
-  let minutes = currentTime.getMinutes().toString();
-  let seconds = currentTime.getSeconds().toString();
-  let ms = currentTime.getMilliseconds().toString();
-
-  if (parseInt(month) < 10) {
-    month = '0' + month;
-  }
-  if (parseInt(day) < 10) {
-    day = '0' + day;
-  }
-  if (parseInt(hours) < 10) {
-    hours = '0' + hours;
-  }
-  if (parseInt(minutes) < 10) {
-    minutes = '0' + minutes;
-  }
-  if (parseInt(seconds) < 10) {
-    seconds = '0' + seconds;
-  }
-  if (parseInt(ms) < 10) {
-    ms = '00' + ms;
-  }
-  if (parseInt(ms) < 100) {
-    ms = '0' + ms;
-  }
-
-  const timestamp =
-    year +
-    '/' +
-    month +
-    '/' +
-    day +
-    ':' +
-    hours +
-    ':' +
-    minutes +
-    ':' +
-    seconds +
-    '.' +
-    ms;
-  return timestamp;
 }
 
 exports.logger = makeLogger();

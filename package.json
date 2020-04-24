@@ -6,8 +6,8 @@
   "scripts": {
     "start": "tsc && nodemon index.ts",
     "test": "mocha -r ts-node/register 'test/**/*.js'",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx . --ignore-pattern dist/ --color",
-    "format": "prettier --write index.ts ./test/index.test.ts ./logger.ts ./utils.js"
+    "lint": "eslint --ext .ts,.tsx . --ignore-pattern dist/ --color",
+    "format": "prettier --write index.ts ./test/index.test.js ./logger.ts ./utils.ts"
   },
   "repository": {
     "type": "git",
