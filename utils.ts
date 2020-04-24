@@ -1,22 +1,30 @@
-const getUserIndex = (clientId, users) => {
-    // let userIndex;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === clientId) {
-        return i;
-      }
-    }
-    return null;
-  };
+interface User {
+  userName: string;
+  id: string;
+  timer: number;
+}
 
-  const restartDisconnectTimer = (user, cb, time=60000) => {
-    if (user && user.timer) {
-      clearTimeout(user.timer);
+const getUserIndex = (clientId: string, users: Array<User>): number => {
+  for (let i = 0; i < users.length; i += 1) {
+    if (users[i].id === clientId) {
+      return i;
     }
-    user.timer = setTimeout(() => {
-      cb();
-    }, time);
   }
-  
-  exports.getUserIndex = getUserIndex
-  exports.restartDisconnectTimer = restartDisconnectTimer;
-  
+  return null;
+};
+
+const restartDisconnectTimer = (
+  user: User,
+  cb: Function,
+  time = 60000
+): object => {
+  if (user && user.timer) {
+    clearTimeout(user.timer);
+  }
+  return setTimeout(() => {
+    cb();
+  }, time);
+};
+
+exports.getUserIndex = getUserIndex;
+exports.restartDisconnectTimer = restartDisconnectTimer;

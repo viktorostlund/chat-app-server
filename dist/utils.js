@@ -1,6 +1,5 @@
 const getUserIndex = (clientId, users) => {
-    // let userIndex;
-    for (let i = 0; i < users.length; i++) {
+    for (let i = 0; i < users.length; i += 1) {
         if (users[i].id === clientId) {
             return i;
         }
@@ -11,7 +10,7 @@ const restartDisconnectTimer = (user, cb, time = 60000) => {
     if (user && user.timer) {
         clearTimeout(user.timer);
     }
-    user.timer = setTimeout(() => {
+    return setTimeout(() => {
         cb();
     }, time);
 };

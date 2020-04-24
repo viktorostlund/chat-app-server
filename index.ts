@@ -27,10 +27,10 @@ io.on('connection', (client) => {
     const i = getIndex(client.id, users);
     if (msg.message.length === 0 || msg.message.length > 200) {
       client.emit('message', 'invalid');
-      restartTimer(users[i], timedLogout, timeout);
+      users[i].timer = restartTimer(users[i], timedLogout, timeout);
     } else {
       emitMessage(msg.message, msg.userName);
-      restartTimer(users[i], timedLogout, timeout);
+      users[i].timer = restartTimer(users[i], timedLogout, timeout);
     }
   });
 
@@ -43,7 +43,7 @@ io.on('connection', (client) => {
       client.emit('login', 'taken');
     } else {
       const i = getIndex(client.id, users);
-      restartTimer(users[i], timedLogout, timeout);
+      users[i].timer = restartTimer(users[i], timedLogout, timeout);
       users[i].userName = userName;
       client.emit('login', 'success');
       emitMessage(`${users[i].userName} entered the chat`, '');
