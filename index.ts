@@ -1,6 +1,6 @@
 const app = require('express')();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const socket = require('socket.io')(http);
 const logger = require('./logger.ts').logger;
 const getIndex = require('./utils.ts').getUserIndex;
 const restartTimer = require('./utils.ts').restartDisconnectTimer;
@@ -12,7 +12,7 @@ const users = [];
 
 exports.server = http.listen(port);
 
-io.on('connection', (client) => {
+socket.on('connection', (client) => {
   users.push({ id: client.id, userName: null, timer: null });
 
   process.on('SIGINT', () => {
@@ -97,7 +97,7 @@ io.on('connection', (client) => {
     if (sendList.length > 0) {
       sendList.forEach((user) => {
         if (user.userName) {
-          io.sockets.connected[user.id].emit('message', {
+          socket.sockets.connected[user.id].emit('message', {
             userName: from,
             message,
             time: new Date().getTime(),
@@ -108,7 +108,7 @@ io.on('connection', (client) => {
   };
 
   const logoutServerExit = () => {
-    if (Object.keys(io.sockets.connected).length > 0) {
+    if (Object.keys(socket.sockets.connected).length > 0) {
       throw new Error('Unexpected server error while serving clients');
     }
     process.exit();
@@ -116,4 +116,4 @@ io.on('connection', (client) => {
 });
 
 // logger.logLevel = 2;
-logger.monitor(io);
+logger.monitor(socket);
