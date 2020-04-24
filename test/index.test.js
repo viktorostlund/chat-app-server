@@ -1,5 +1,4 @@
 const chai = require('chai');
-// const mocha = require('mocha')
 const should = chai.should();
 const testport = 3001;
 const testRestartTimer = require('../utils.ts').restartDisconnectTimer;
