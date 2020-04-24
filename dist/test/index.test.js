@@ -100,7 +100,10 @@ describe('Client emits should be picked up correctly by server', function () {
     });
 });
 describe('Helper functions', function () {
-    const mockUsers = [{ id: '10', userName: 'Viktor', timer: null }, { id: '11', userName: 'Amanda', timer: null }];
+    const mockUsers = [
+        { id: '10', userName: 'Viktor', timer: null },
+        { id: '11', userName: 'Amanda', timer: null },
+    ];
     it('getUserIndex should return correct index', function (done) {
         testGetIndex('11', mockUsers).should.equal(1);
         done();

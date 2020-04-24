@@ -1,9 +1,6 @@
 const fs = require('fs');
-const util = require('util');
 const readFile = fs.readFile;
 const writeFile = fs.writeFile;
-// const readFile = util.promisify(fs.readFile);
-// const writeFile = util.promisify(fs.writeFile);
 const bufferDuration = 1000;
 let clientPrototypeSend = null;
 function makeLogger() {
@@ -11,13 +8,8 @@ function makeLogger() {
         stream: process.stdout,
         consoleLog: console.log,
         socketLoggers: [],
-        authToken: null,
-        logLevel: 0,
         failSilently: true,
         buf: [],
-        messageFormatter: null,
-        responseFormatter: null,
-        socketLoggerSyncer: null,
         flushBuffer: function () {
             if (logger.buf.length) {
                 const newArr = logger.buf.map(function (obj) {
@@ -26,29 +18,18 @@ function makeLogger() {
                 logger.stream.write(newArr.join(''), 'utf8');
                 readFile('./log.json', 'utf8', (err, result) => {
                     const parsed = JSON.parse(result);
-                    // console.log(parsed);
-                    if (parsed === null) {
-                        // writeFile('./log.json', JSON.stringify(newArr.join('') + '\n'), 'utf8', () => {console.log('Ja')});
+                    let newString = '[\n';
+                    if (parsed && parsed.length === 0) {
+                        newString += `    ${newArr[0]}]`;
                     }
-                    else {
-                        let newString = '[';
+                    else if (parsed) {
                         for (i = 0; i < parsed.length; i++) {
-                            newString += JSON.stringify(parsed[i]) + ',';
+                            newString += '    ' + JSON.stringify(parsed[i]) + ',\n';
                         }
-                        newString += `${newArr[0]}]`;
-                        // console.log(newString)
-                        // console.log(newArray);
-                        // console.log(newArr[0]);
-                        // const copy = parsed.push('fsdf');
-                        // console.log(copy);
-                        // console.log(parsed);
-                        // console.log(JSON.parse(newArr[0]))
-                        // console.log(parsed.push('sdfdf'));
-                        writeFile('./log.json', newString, 'utf8', () => { console.log('Ja'); });
+                        newString += `    ${newArr[0]}]`;
                     }
+                    writeFile('./log.json', newString, 'utf8', () => null);
                 });
-                // await writeFile('./log.json', currentLog.concat(newArr.join('')));
-                // logFile.writeFile('loop.json', "id :" + i + " square :" + i * i);
                 if (logger.socketLoggers.length > 0) {
                     const count = logger.socketLoggers.length;
                     for (var i = 0; i < count; ++i)
@@ -85,7 +66,6 @@ function makeLogger() {
                 });
             });
         },
-        // Expects an array
         log: function (msg) {
             try {
                 if (!Array.isArray(msg))
@@ -98,7 +78,7 @@ function makeLogger() {
                 if (!logger.failSilently)
                     throw ex;
             }
-        }
+        },
     };
     setInterval(logger.flushBuffer, bufferDuration);
     return logger;
@@ -133,8 +113,19 @@ function currentTimeToString() {
     if (parseInt(ms) < 100) {
         ms = '0' + ms;
     }
-    const timestamp = year + "/" + month + "/" + day + ":" + hours
-        + ":" + minutes + ":" + seconds + "." + ms;
+    const timestamp = year +
+        '/' +
+        month +
+        '/' +
+        day +
+        ':' +
+        hours +
+        ':' +
+        minutes +
+        ':' +
+        seconds +
+        '.' +
+        ms;
     return timestamp;
 }
 exports.logger = makeLogger();

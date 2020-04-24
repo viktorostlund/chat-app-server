@@ -77,7 +77,11 @@ io.on('connection', (client) => {
   const timedLogout = () => {
     const userIndex = getIndex(client.id, users);
     if (users[userIndex] && users[userIndex].userName) {
-      emitMessage(`${users[userIndex].userName} was left the chat due to inactivity`, '', userIndex);
+      emitMessage(
+        `${users[userIndex].userName} was left the chat due to inactivity`,
+        '',
+        userIndex
+      );
     }
     client.emit('logout', 'inactivity');
     logger.manualActions({ action: 'inactivity', id: users[userIndex].id });

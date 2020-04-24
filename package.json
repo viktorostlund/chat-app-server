@@ -7,7 +7,7 @@
     "start": "tsc && nodemon index.ts",
     "test": "mocha 'test/**/*.ts'",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx . --ignore-pattern dist/ --color",
-    "format": "prettier --write index.ts ./test/index.test.ts"
+    "format": "prettier --write index.ts ./test/index.test.ts ./logger.ts"
   },
   "repository": {
     "type": "git",
