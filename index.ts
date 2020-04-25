@@ -1,9 +1,8 @@
 const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
 const http = require('http').createServer(app);
 const socket = require('socket.io')(http); // eslint-disable-line @typescript-eslint/no-var-requires
-const { logger } = require('./logger.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
-const getIndex = require('./utils.ts').getUserIndex; // eslint-disable-line @typescript-eslint/no-var-requires
-const restartTimer = require('./utils.ts').restartDisconnectTimer; // eslint-disable-line prefer-destructuring
+const { logger } = require('./utils/logger.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
+const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 
 const timeout = 60000;
 
@@ -58,7 +57,7 @@ socket.on('connection', (client): void => {
     if (users[i] && users[i].userName) {
       emitMessage({
         status: 'success',
-        message: `${users[i].userName} was left the chat due to inactivity`,
+        message: `${users[i].userName} has left due to inactivity`,
         userName: '',
         id: i,
         sendToSelf: false,
@@ -102,7 +101,7 @@ socket.on('connection', (client): void => {
     const i = getIndex(client.id, users);
     const newMessage = {
       status: 'success',
-      message: `${userName} entered the chat`,
+      message: `${userName} joined the chat`,
       userName: '',
       id: i,
       time: new Date().getTime(),

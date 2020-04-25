@@ -1,6 +1,4 @@
-import fs = require('fs');
-
-const { writeFile, readFile } = fs;
+const { appendFile } = require('fs'); // eslint-disable-line @typescript-eslint/no-var-requires
 
 const bufferDuration = 1000;
 
@@ -52,18 +50,7 @@ function makeLogger(): object {
           return `${JSON.stringify(obj)}\n`;
         });
         logger.stream.write(newArr.join(''), 'utf8');
-        readFile('./log.json', 'utf8', (err, result) => {
-          const parsed = JSON.parse(result);
-          let newString = '[\n';
-          if (parsed && parsed.length === 0) {
-            newString += `    ${newArr[0]}]`;
-          } else if (parsed) {
-            for (let i = 0; i < parsed.length; i += 1) {
-              newString += `    ${JSON.stringify(parsed[i])},\n`;
-            }
-            newString += `    ${newArr[0]}]`;
-          }
-          writeFile('./log.json', newString, 'utf8', () => null);
+        appendFile('./log.txt', newArr.join(''), 'utf8', (err, result) => {
         });
         if (logger.socketLoggers.length > 0) {
           const count = logger.socketLoggers.length;

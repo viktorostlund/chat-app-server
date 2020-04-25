@@ -1,8 +1,7 @@
 const chai = require('chai');
 const should = chai.should();
 const testport = 3001;
-const testRestartTimer = require('../utils.ts').restartDisconnectTimer;
-const testGetIndex = require('../utils.ts').getUserIndex;
+const { restartTimer, getIndex } = require('../utils/helpers.ts');
 
 const testio = require('socket.io-client');
 
@@ -15,7 +14,7 @@ describe('Client emits should be picked up correctly by server', function () {
 
   const messageObj = {
     userName: 'Viktor',
-    message: 'Viktor entered the chat',
+    message: 'Viktor joined the chat',
     time: new Date().getTime(),
   };
 
@@ -30,34 +29,34 @@ describe('Client emits should be picked up correctly by server', function () {
     done();
   });
 
-  it('client should be disconnected by default', function (done) {
+  it('client should be disconnected by default', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
     client.connected.should.equal(false);
     done();
   });
 
-  it('client should connect', function (done) {
+  it('client should connect', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
-    client.once('connect', function () {
+    client.once('connect', () => {
       client.connected.should.equal(true);
       client.disconnect();
       done();
     });
   });
 
-  it('client should disconnect', function (done) {
+  it('client should disconnect', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
-    client.once('connect', function () {
+    client.once('connect', () => {
       client.disconnect();
       client.connected.should.equal(false);
       done();
     });
   });
 
-  it('message should be sent when logged in', function (done) {
+  it('message should be sent when logged in', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
-    client.once('connect', function () {
-      client.once('message', function (response) {
+    client.once('connect', () => {
+      client.once('message', (response) => {
         response.message.should.equal(messageObj.message);
         client.disconnect();
         done();
@@ -66,10 +65,10 @@ describe('Client emits should be picked up correctly by server', function () {
     });
   });
 
-  it('server should send out message when client logs in', function (done) {
+  it('server should send out message when client logs in', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
-    client.once('connect', function () {
-      client.once('message', function (response) {
+    client.once('connect', () => {
+      client.once('message', (response) => {
         response.message.should.equal(messageObj.message);
         client.disconnect();
         done();
@@ -78,11 +77,11 @@ describe('Client emits should be picked up correctly by server', function () {
     });
   });
 
-  it('message should be sent out', function (done) {
+  it('message should be sent out', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
-    client.once('connect', function () {
-      client.once('message', function (response) {
-        client.once('message', function (response) {
+    client.once('connect', () => {
+      client.once('message', () => {
+        client.once('message', (response) => {
           response.message.should.equal(messageObj2.message);
           client.disconnect();
           done();
@@ -93,7 +92,7 @@ describe('Client emits should be picked up correctly by server', function () {
     });
   });
 
-  it('other clients should receive messages', function (done) {
+  it('other clients should receive messages', (done) => {
     const client = testio.connect(`http://localhost:${testport}`, options);
     const client2 = testio.connect(`http://localhost:${testport}`, options);
     client.once('connect', () => {
@@ -112,17 +111,18 @@ describe('Client emits should be picked up correctly by server', function () {
   });
 });
 
-describe('Helper functions', function () {
+describe('Helper functions', () => {
   const mockUsers = [
     { id: '10', userName: 'Viktor', timer: null },
     { id: '11', userName: 'Amanda', timer: null },
   ];
-  it('getUserIndex should return correct index', function (done) {
-    testGetIndex('11', mockUsers).should.equal(1);
+  
+  it('getIndex should return correct index', function (done) {
+    getIndex('11', mockUsers).should.equal(1);
     done();
   });
 
-  it('restartDisconnectTimer should restart timer', function (done) {
-    testRestartTimer({ timer: {} }, done, 10);
+  it('restartTimer should restart timer', (done) => {
+    restartTimer({ timer: {} }, done, 10);
   });
 });

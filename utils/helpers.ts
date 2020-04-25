@@ -26,5 +26,5 @@ const restartDisconnectTimer = (
   }, time);
 };
 
-exports.getUserIndex = getUserIndex;
-exports.restartDisconnectTimer = restartDisconnectTimer;
+exports.getIndex = getUserIndex;
+exports.restartTimer = restartDisconnectTimer;

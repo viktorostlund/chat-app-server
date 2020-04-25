@@ -1,15 +1,14 @@
 const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
 const http = require('http').createServer(app);
 const socket = require('socket.io')(http); // eslint-disable-line @typescript-eslint/no-var-requires
-const { logger } = require('./logger.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
-const getIndex = require('./utils.ts').getUserIndex; // eslint-disable-line @typescript-eslint/no-var-requires
-const restartTimer = require('./utils.ts').restartDisconnectTimer; // eslint-disable-line prefer-destructuring
+const { logger } = require('./utils/logger.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
+const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const timeout = 60000;
 const port = 3001;
 const users = [];
 exports.server = http.listen(port);
 socket.on('connection', (client) => {
-    users.push({ id: client.id, userName: String, timer: Number });
+    users.push({ id: client.id, userName: '', timer: 0 });
     const emitMessage = (message) => {
         const sendList = users.slice();
         if (!message.sendToSelf) {
@@ -34,7 +33,7 @@ socket.on('connection', (client) => {
         if (users[i] && users[i].userName) {
             emitMessage({
                 status: 'success',
-                message: `${users[i].userName} was left the chat due to inactivity`,
+                message: `${users[i].userName} has left due to inactivity`,
                 userName: '',
                 id: i,
                 sendToSelf: false,
@@ -66,10 +65,9 @@ socket.on('connection', (client) => {
     });
     client.on('login', (userName) => {
         const i = getIndex(client.id, users);
-        users[i].userName = userName;
         const newMessage = {
             status: 'success',
-            message: `${users[i].userName} entered the chat`,
+            message: `${userName} joined the chat`,
             userName: '',
             id: i,
             time: new Date().getTime(),
@@ -77,36 +75,34 @@ socket.on('connection', (client) => {
             sendToOthers: true,
         };
         if (!userName) {
-            newMessage.status = 'empty';
+            client.emit('login', 'empty');
         }
         else if (userName.length > 10) {
-            newMessage.status = 'invalid';
+            client.emit('login', 'invalid');
         }
         else if (users.some((user) => user.userName === userName)) {
-            newMessage.status = 'taken';
+            client.emit('login', 'taken');
         }
         else {
             client.emit('login', 'success');
             users[i].timer = restartTimer(users[i], timedLogout, timeout);
+            users[i].userName = userName;
             emitMessage(newMessage);
         }
-        console.log(newMessage);
-        console.log(users);
     });
     client.on('logout', () => {
         const i = getIndex(client.id, users);
-        const newMessage = {
-            status: 'success',
-            message: `${users[i].userName} left the chat`,
-            userName: '',
-            id: i,
-            time: new Date().getTime(),
-            sendToSelf: false,
-            sendToOthers: true,
-        };
         if (users[i].userName) {
             client.emit('logout', 'success');
-            emitMessage(newMessage);
+            emitMessage({
+                status: 'success',
+                message: `${users[i].userName} left the chat`,
+                userName: '',
+                id: i,
+                time: new Date().getTime(),
+                sendToSelf: false,
+                sendToOthers: true,
+            });
             users[i].userName = null;
             if (users[i].timer) {
                 clearTimeout(users[i].timer);
@@ -114,7 +110,7 @@ socket.on('connection', (client) => {
             }
         }
         else {
-            client.emit(Object.assign(Object.assign({}, newMessage), { status: 'failure' }));
+            client.emit('logout', 'failure');
         }
     });
     client.on('disconnect', () => {
