@@ -644,3 +644,5 @@
 {"message":"[object Object] left the chat - Gtz70VawlU9LsnO5AAAA","level":"info"}
 {"message":"Client disconnected - Gtz70VawlU9LsnO5AAAA","level":"info"}
 {"message":"Server was shut down","level":"info"}
+{"message":"Connected client - FhT80JHYoale61NAAAAA","level":"info"}
+{"message":"Server was shut down while serving clients","level":"error"}
