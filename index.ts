@@ -2,7 +2,7 @@ const app = require('express')(); // eslint-disable-line @typescript-eslint/no-v
 const http = require('http').createServer(app);
 const socket = require('socket.io')(http); // eslint-disable-line @typescript-eslint/no-var-requires
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
-const logger = require('./utils/winston.ts');
+const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 
 const TIMEOUT = 60000;
 
@@ -21,13 +21,13 @@ interface Message {
 }
 
 const templateMessage = {
-    status: 'success',
-    userName: '',
-    message: '',
-    time: 0,
-    sendToSelf: true,
-    sendToOthers: true,
-}
+  status: 'success',
+  userName: '',
+  message: '',
+  time: 0,
+  sendToSelf: true,
+  sendToOthers: true,
+};
 
 socket.on('connection', (client): void => {
   users.push({ id: client.id, userName: '', timer: 0 });
@@ -35,7 +35,9 @@ socket.on('connection', (client): void => {
 
   const emitMessage = (message: Message): void => {
     const sendList = users.slice();
-    if (!message.sendToSelf) { sendList.splice(getIndex(message.userName, users), 1) };
+    if (!message.sendToSelf) {
+      sendList.splice(getIndex(message.userName, users), 1);
+    }
     if (sendList.length > 0) {
       sendList.forEach((user) => {
         if (socket.sockets.connected[user.id]) {
@@ -57,10 +59,14 @@ socket.on('connection', (client): void => {
   const timedLogout = (): void => {
     const i = getIndex(client.id, users);
     if (users[i] && users[i].userName) {
-      emitMessage({ ...templateMessage, message: `${users[i].userName} has left due to inactivity`, sendToSelf: false });
+      emitMessage({
+        ...templateMessage,
+        message: `${users[i].userName} has left due to inactivity`,
+        sendToSelf: false,
+      });
     }
     client.emit('logout', 'inactivity');
-    logger.info(`${users[i]} was disconnected due to inactivity - ${client.id}`);
+    logger.info(`${users[i]} left chat due to inactivity - ${client.id}`);
     users[i].userName = null;
     users[i].timer = null;
   };
@@ -98,7 +104,10 @@ socket.on('connection', (client): void => {
       client.emit('login', 'success');
       users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
       users[i].userName = userName;
-      emitMessage({ ...templateMessage, message: `${userName} joined the chat` });
+      emitMessage({
+        ...templateMessage,
+        message: `${userName} joined the chat`,
+      });
       logger.info(`${userName} joined chat - ${client.id}`);
     }
   });
@@ -106,7 +115,11 @@ socket.on('connection', (client): void => {
   client.on('logout', () => {
     const i = getIndex(client.id, users);
     client.emit('logout', 'success');
-    emitMessage({ ...templateMessage, message: `${users[i].userName} left the chat`, sendToSelf: false });
+    emitMessage({
+      ...templateMessage,
+      message: `${users[i].userName} left the chat`,
+      sendToSelf: false,
+    });
     logger.info(`${users[i]} left the chat - ${client.id}`);
     users[i].userName = null;
     clearTimeout(users[i].timer);
@@ -115,9 +128,15 @@ socket.on('connection', (client): void => {
 
   client.on('disconnect', () => {
     const i = getIndex(client.id, users);
-    emitMessage({ ...templateMessage, message: `${users[i].userName} was disconnected`, sendToSelf: false });
-    if (users[i].timer) { clearTimeout(users[i].timer) };
-    logger.info(`${users[i]} was disconnected - ${client.id}`);
+    emitMessage({
+      ...templateMessage,
+      message: `${users[i].userName} was disconnected`,
+      sendToSelf: false,
+    });
+    if (users[i].timer) {
+      clearTimeout(users[i].timer);
+    }
+    logger.info(`Client disconnected - ${client.id}`);
     users.splice(i, 1);
   });
 });

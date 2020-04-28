@@ -86,7 +86,12 @@ describe('Client emits should be picked up correctly by server', function () {
           client.disconnect();
           done();
         });
-        client.emit('message', messageObj2);
+        client.emit(
+          'message',
+          messageObj2.userName,
+          messageObj2.message,
+          messageObj.time
+        );
       });
       client.emit('login', 'Viktor');
     });
@@ -116,7 +121,7 @@ describe('Helper functions', () => {
     { id: '10', userName: 'Viktor', timer: null },
     { id: '11', userName: 'Amanda', timer: null },
   ];
-  
+
   it('getIndex should return correct index', function (done) {
     getIndex('11', mockUsers).should.equal(1);
     done();

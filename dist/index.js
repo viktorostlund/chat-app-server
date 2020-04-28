@@ -2,7 +2,7 @@ const app = require('express')(); // eslint-disable-line @typescript-eslint/no-v
 const http = require('http').createServer(app);
 const socket = require('socket.io')(http); // eslint-disable-line @typescript-eslint/no-var-requires
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
-const logger = require('./utils/winston.ts');
+const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const TIMEOUT = 60000;
 const port = 3001;
 const users = [];
@@ -17,7 +17,7 @@ const templateMessage = {
 };
 socket.on('connection', (client) => {
     users.push({ id: client.id, userName: '', timer: 0 });
-    logger.info(`Connected client ${client.id}`);
+    logger.info(`Connected client - ${client.id}`);
     const emitMessage = (message) => {
         const sendList = users.slice();
         if (!message.sendToSelf) {
@@ -25,9 +25,7 @@ socket.on('connection', (client) => {
         }
         if (sendList.length > 0) {
             sendList.forEach((user) => {
-                console.log(user.id);
-                console.log(socket.sockets.connected[user.id]);
-                if (user.userName) {
+                if (socket.sockets.connected[user.id]) {
                     socket.sockets.connected[user.id].emit('message', message);
                 }
             });
@@ -35,10 +33,10 @@ socket.on('connection', (client) => {
     };
     const logoutServerExit = () => {
         if (Object.keys(socket.sockets.connected).length > 0) {
-            logger.error(`Server shut down while serving clients`);
-            throw new Error('Server shut down while serving clients');
+            logger.error(`Server was shut down while serving clients`);
+            throw new Error('Server was shut down while serving clients');
         }
-        logger.info(`Server shut down`);
+        logger.info(`Server was shut down`);
         process.exit();
     };
     const timedLogout = () => {
@@ -47,8 +45,9 @@ socket.on('connection', (client) => {
             emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} has left due to inactivity`, sendToSelf: false }));
         }
         client.emit('logout', 'inactivity');
-        logger.info(`Disconnection due to inactivity ${client.id}`);
-        users[i].userName, users[i].timer = null;
+        logger.info(`${users[i]} left chat due to inactivity - ${client.id}`);
+        users[i].userName = null;
+        users[i].timer = null;
     };
     process.on('SIGINT', () => {
         logoutServerExit();
@@ -65,7 +64,7 @@ socket.on('connection', (client) => {
         }
         else {
             emitMessage(messageToSend);
-            logger.info(`Message sent by ${userName}`);
+            logger.info(`${userName} sent message - ${client.id}`);
         }
         users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
     });
@@ -85,14 +84,14 @@ socket.on('connection', (client) => {
             users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
             users[i].userName = userName;
             emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${userName} joined the chat` }));
-            logger.info(`${userName} joined chat`);
+            logger.info(`${userName} joined chat - ${client.id}`);
         }
     });
     client.on('logout', () => {
         const i = getIndex(client.id, users);
         client.emit('logout', 'success');
         emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} left the chat`, sendToSelf: false }));
-        logger.info(`${users[i]} left the chat`);
+        logger.info(`${users[i]} left the chat - ${client.id}`);
         users[i].userName = null;
         clearTimeout(users[i].timer);
         users[i].timer = null;
@@ -103,8 +102,7 @@ socket.on('connection', (client) => {
         if (users[i].timer) {
             clearTimeout(users[i].timer);
         }
-        ;
-        logger.info(`${users[i]} was disconnected`);
+        logger.info(`Client disconnected - ${client.id}`);
         users.splice(i, 1);
     });
 });
