@@ -1,6 +1,5 @@
-const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
-const http = require('http').createServer(app);
-const socket = require('socket.io')(http); // eslint-disable-line @typescript-eslint/no-var-requires
+// const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
+// const http = require('http').createServer(app);
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 
@@ -9,7 +8,10 @@ const TIMEOUT = 60000;
 const port = 3001;
 const users = [];
 
-exports.server = http.listen(port);
+const socketIo = require('socket.io').listen(port); // eslint-disable-line @typescript-eslint/no-var-requires
+// const server = http.listen(port);
+
+exports.socketIo = socketIo;
 
 interface Message {
   status: string;
@@ -23,14 +25,14 @@ interface Message {
 const templateMessage = {
   status: 'success',
   userName: '',
-  message: '',
-  time: 0,
+  message: null,
+  time: null,
   sendToSelf: true,
   sendToOthers: true,
 };
 
-socket.on('connection', (client): void => {
-  users.push({ id: client.id, userName: '', timer: 0 });
+socketIo.on('connection', (client): void => {
+  users.push({ id: client.id, userName: '', timer: null });
   logger.info(`Connected client - ${client.id}`);
 
   const emitMessage = (message: Message): void => {
@@ -40,15 +42,15 @@ socket.on('connection', (client): void => {
     }
     if (sendList.length > 0) {
       sendList.forEach((user) => {
-        if (socket.sockets.connected[user.id]) {
-          socket.sockets.connected[user.id].emit('message', message);
+        if (socketIo.sockets.connected[user.id] && user.userName) {
+          socketIo.sockets.connected[user.id].emit('message', message);
         }
       });
     }
   };
 
   const logoutServerExit = (): void => {
-    if (Object.keys(socket.sockets.connected).length > 0) {
+    if (Object.keys(socketIo.sockets.connected).length > 0) {
       logger.error(`Server was shut down while serving clients`);
       throw new Error('Server was shut down while serving clients');
     }
@@ -68,14 +70,13 @@ socket.on('connection', (client): void => {
     client.emit('logout', 'inactivity');
     logger.info(`${users[i]} left chat due to inactivity - ${client.id}`);
     users[i].userName = null;
+    clearTimeout(users[i].timer);
     users[i].timer = null;
   };
 
+  const sigs: Array<NodeJS.Signals> = ['SIGINT', 'SIGTERM'];
+  sigs.forEach(sig => process.on(sig, logoutServerExit))
   process.on('SIGINT', () => {
-    logoutServerExit();
-  });
-
-  process.on('SIGTERM', () => {
     logoutServerExit();
   });
 

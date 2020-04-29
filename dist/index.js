@@ -1,12 +1,13 @@
-const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
-const http = require('http').createServer(app);
-const socket = require('socket.io')(http); // eslint-disable-line @typescript-eslint/no-var-requires
+// const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
+// const http = require('http').createServer(app);
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const TIMEOUT = 60000;
 const port = 3001;
 const users = [];
-exports.server = http.listen(port);
+const socketIo = require('socket.io').listen(port); // eslint-disable-line @typescript-eslint/no-var-requires
+// const server = http.listen(port);
+exports.socketIo = socketIo;
 const templateMessage = {
     status: 'success',
     userName: '',
@@ -15,7 +16,7 @@ const templateMessage = {
     sendToSelf: true,
     sendToOthers: true,
 };
-socket.on('connection', (client) => {
+socketIo.on('connection', (client) => {
     users.push({ id: client.id, userName: '', timer: 0 });
     logger.info(`Connected client - ${client.id}`);
     const emitMessage = (message) => {
@@ -25,14 +26,14 @@ socket.on('connection', (client) => {
         }
         if (sendList.length > 0) {
             sendList.forEach((user) => {
-                if (socket.sockets.connected[user.id]) {
-                    socket.sockets.connected[user.id].emit('message', message);
+                if (socketIo.sockets.connected[user.id]) {
+                    socketIo.sockets.connected[user.id].emit('message', message);
                 }
             });
         }
     };
     const logoutServerExit = () => {
-        if (Object.keys(socket.sockets.connected).length > 0) {
+        if (Object.keys(socketIo.sockets.connected).length > 0) {
             logger.error(`Server was shut down while serving clients`);
             throw new Error('Server was shut down while serving clients');
         }
@@ -49,10 +50,9 @@ socket.on('connection', (client) => {
         users[i].userName = null;
         users[i].timer = null;
     };
+    const sigs = ['SIGINT', 'SIGTERM'];
+    sigs.forEach(sig => process.on(sig, logoutServerExit));
     process.on('SIGINT', () => {
-        logoutServerExit();
-    });
-    process.on('SIGTERM', () => {
         logoutServerExit();
     });
     client.on('message', (userName, message, time) => {
