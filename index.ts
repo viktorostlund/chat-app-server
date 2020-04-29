@@ -14,12 +14,12 @@ const socketIo = require('socket.io').listen(port); // eslint-disable-line @type
 exports.socketIo = socketIo;
 
 interface Message {
-  status: string;
+  status: string; // Erase this and send status separately
   userName: string;
   message: string;
   time: number;
   sendToSelf: boolean;
-  sendToOthers: boolean;
+  sendToOthers: boolean; // Erase this
 }
 
 const templateMessage = {
@@ -129,11 +129,13 @@ socketIo.on('connection', (client): void => {
 
   client.on('disconnect', () => {
     const i = getIndex(client.id, users);
-    emitMessage({
-      ...templateMessage,
-      message: `${users[i].userName} was disconnected`,
-      sendToSelf: false,
-    });
+    if (users[i].userName) {
+      emitMessage({
+        ...templateMessage,
+        message: `${users[i].userName} was disconnected`,
+        sendToSelf: false,
+      });
+    }
     if (users[i].timer) {
       clearTimeout(users[i].timer);
     }

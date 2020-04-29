@@ -11,13 +11,13 @@ exports.socketIo = socketIo;
 const templateMessage = {
     status: 'success',
     userName: '',
-    message: '',
-    time: 0,
+    message: null,
+    time: null,
     sendToSelf: true,
     sendToOthers: true,
 };
 socketIo.on('connection', (client) => {
-    users.push({ id: client.id, userName: '', timer: 0 });
+    users.push({ id: client.id, userName: '', timer: null });
     logger.info(`Connected client - ${client.id}`);
     const emitMessage = (message) => {
         const sendList = users.slice();
@@ -26,7 +26,7 @@ socketIo.on('connection', (client) => {
         }
         if (sendList.length > 0) {
             sendList.forEach((user) => {
-                if (socketIo.sockets.connected[user.id]) {
+                if (socketIo.sockets.connected[user.id] && user.userName) {
                     socketIo.sockets.connected[user.id].emit('message', message);
                 }
             });
@@ -48,6 +48,7 @@ socketIo.on('connection', (client) => {
         client.emit('logout', 'inactivity');
         logger.info(`${users[i]} left chat due to inactivity - ${client.id}`);
         users[i].userName = null;
+        clearTimeout(users[i].timer);
         users[i].timer = null;
     };
     const sigs = ['SIGINT', 'SIGTERM'];
