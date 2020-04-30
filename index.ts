@@ -32,7 +32,7 @@ socketIo.on('connection', (client): void => {
   users.push({ id: client.id, userName: '', timer: null });
   logger.info(`Connected client - ${client.id}`);
 
-  const emitMessage = (message: Message): void => {
+  const emitMessage = (message: Message, cb: Function = () => {}): void => {
     const sendList = users.slice();
     if (!message.sendToSelf) {
       sendList.splice(getIndex(message.userName, users), 1);
@@ -43,6 +43,7 @@ socketIo.on('connection', (client): void => {
           socketIo.sockets.connected[user.id].emit('message', message);
         }
       });
+      cb();
     }
   };
 
@@ -62,13 +63,14 @@ socketIo.on('connection', (client): void => {
         ...templateMessage,
         message: `${users[i].userName} has left due to inactivity`,
         sendToSelf: false,
+      }, () => {
+        logger.info(`${users[i].userName} left chat due to inactivity - ${client.id}`);
+        client.emit('logout', 'inactivity');
+        users[i].userName = null;
+        clearTimeout(users[i].timer);
+        users[i].timer = null;
       });
     }
-    client.emit('logout', 'inactivity');
-    logger.info(`${users[i]} left chat due to inactivity - ${client.id}`);
-    users[i].userName = null;
-    clearTimeout(users[i].timer);
-    users[i].timer = null;
   };
 
   const sigs: Array<NodeJS.Signals> = ['SIGINT', 'SIGTERM'];
@@ -112,16 +114,17 @@ socketIo.on('connection', (client): void => {
 
   client.on('logout', () => {
     const i = getIndex(client.id, users);
-    client.emit('logout', 'success');
     emitMessage({
       ...templateMessage,
       message: `${users[i].userName} left the chat`,
       sendToSelf: false,
+    }, () => {
+      logger.info(`${users[i].userName} left the chat - ${client.id}`);
+      client.emit('logout', 'success');
+      users[i].userName = null;
+      clearTimeout(users[i].timer);
+      users[i].timer = null;
     });
-    logger.info(`${users[i]} left the chat - ${client.id}`);
-    users[i].userName = null;
-    clearTimeout(users[i].timer);
-    users[i].timer = null;
   });
 
   client.on('disconnect', () => {
@@ -131,12 +134,13 @@ socketIo.on('connection', (client): void => {
         ...templateMessage,
         message: `${users[i].userName} was disconnected`,
         sendToSelf: false,
+      }, () => {
+        if (users[i].timer) {
+          clearTimeout(users[i].timer);
+        }
+        logger.info(`Client disconnected - ${client.id}`);
+        users.splice(i, 1);
       });
     }
-    if (users[i].timer) {
-      clearTimeout(users[i].timer);
-    }
-    logger.info(`Client disconnected - ${client.id}`);
-    users.splice(i, 1);
   });
 });
