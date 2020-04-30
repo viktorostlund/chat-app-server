@@ -37,7 +37,6 @@ socketIo.on('connection', (client): void => {
     }
     if (sendList.length > 0) {
       sendList.forEach((user) => {
-        console.log((socketIo.sockets.connected[user.id] && user.userName) != false)
         if (socketIo.sockets.connected[user.id] && user.userName) {
           socketIo.sockets.connected[user.id].emit('message', message);
         }

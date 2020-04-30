@@ -23,7 +23,6 @@ socketIo.on('connection', (client) => {
         }
         if (sendList.length > 0) {
             sendList.forEach((user) => {
-                console.log((socketIo.sockets.connected[user.id] && user.userName) != false);
                 if (socketIo.sockets.connected[user.id] && user.userName) {
                     socketIo.sockets.connected[user.id].emit('message', message);
                 }
@@ -99,12 +98,12 @@ socketIo.on('connection', (client) => {
         const i = getIndex(client.id, users);
         if (users[i].userName) {
             broadcast(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} was disconnected`, sendToSelf: false }));
-            if (users[i].timer) {
-                clearTimeout(users[i].timer);
-            }
-            logger.info(`Client disconnected - ${client.id}`);
-            users.splice(i, 1);
         }
+        if (users[i].timer) {
+            clearTimeout(users[i].timer);
+        }
+        logger.info(`Client disconnected - ${client.id}`);
+        users.splice(i, 1);
     });
 });
 //# sourceMappingURL=index.js.map
