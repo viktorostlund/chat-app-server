@@ -1,18 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express = require('express');
-const socketIoModule = require('socket.io'); // eslint-disable-line @typescript-eslint/no-var-requires
-const wireUpServer = require('socket.io-fix-close');
 const TIMEOUT = 60000;
-const PORT = 3001;
+const port = 3001;
 const users = [];
-const app = express();
-const http = app.listen(PORT);
-const socketIo = socketIoModule(http);
+const socketIo = require('socket.io').listen(port); // eslint-disable-line @typescript-eslint/no-var-requires
 const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 exports.socketIo = socketIo;
-wireUpServer(http, socketIo);
 const templateMessage = {
     status: 'success',
     userName: '',
@@ -38,13 +30,12 @@ socketIo.on('connection', (client) => {
         }
     };
     const logoutServerExit = () => {
-        // if (Object.keys(socketIo.sockets.connected).length > 0) {
-        //   logger.error(`Server was shut down while serving clients`);
-        //   throw new Error('Server was shut down while serving clients');
-        // }
+        if (Object.keys(socketIo.sockets.connected).length > 0) {
+            logger.error(`Server was shut down while serving clients`);
+            throw new Error('Server was shut down while serving clients');
+        }
         logger.info(`Server was shut down`);
-        socketIo.close();
-        http.close();
+        process.exit();
     };
     const timedLogout = () => {
         const i = getIndex(client.id, users);
