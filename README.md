@@ -2,6 +2,8 @@
 
 Server side of chat room application, communicating via sockets with client side. Handles connecting clients, logging in and logging out as a user and sending messages to other logged in users.
 
+![image](https://user-images.githubusercontent.com/59824446/80713110-3808ac80-8af3-11ea-9476-55e35264b1aa.png)
+
 ### Features
 -Validates data such as login attempts and sending messages from clients before responding
 -Tests suite include tests of socket transmissions with mock clients
