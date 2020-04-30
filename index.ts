@@ -1,12 +1,22 @@
-const TIMEOUT = 60000;
-const port = 3001;
-const users = [];
+import { Server } from "http";
+import { Http2ServerRequest } from "http2";
 
-const socketIo = require('socket.io').listen(port); // eslint-disable-line @typescript-eslint/no-var-requires
+const express = require('express');
+const socketIoModule = require('socket.io') // eslint-disable-line @typescript-eslint/no-var-requires
+const wireUpServer = require('socket.io-fix-close');
+ 
+const TIMEOUT = 60000;
+const PORT = 3001;
+const users = [];
+const app = express();
+const http = app.listen(PORT);
+const socketIo = socketIoModule(http);
+
 const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 
 exports.socketIo = socketIo;
+wireUpServer(http, socketIo);
 
 interface Message {
   status: string;
@@ -45,12 +55,13 @@ socketIo.on('connection', (client): void => {
   };
 
   const logoutServerExit = (): void => {
-    if (Object.keys(socketIo.sockets.connected).length > 0) {
-      logger.error(`Server was shut down while serving clients`);
-      throw new Error('Server was shut down while serving clients');
-    }
+    // if (Object.keys(socketIo.sockets.connected).length > 0) {
+    //   logger.error(`Server was shut down while serving clients`);
+    //   throw new Error('Server was shut down while serving clients');
+    // }
     logger.info(`Server was shut down`);
-    process.exit();
+    socketIo.close();
+    http.close();
   };
 
   const timedLogout = (): void => {
