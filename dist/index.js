@@ -16,13 +16,14 @@ const templateMessage = {
 socketIo.on('connection', (client) => {
     users.push({ id: client.id, userName: '', timer: null });
     logger.info(`Connected client - ${client.id}`);
-    const emitMessage = (message) => {
+    const broadcast = (message) => {
         const sendList = users.slice();
         if (!message.sendToSelf) {
             sendList.splice(getIndex(message.userName, users), 1);
         }
         if (sendList.length > 0) {
             sendList.forEach((user) => {
+                console.log((socketIo.sockets.connected[user.id] && user.userName) != false);
                 if (socketIo.sockets.connected[user.id] && user.userName) {
                     socketIo.sockets.connected[user.id].emit('message', message);
                 }
@@ -40,7 +41,7 @@ socketIo.on('connection', (client) => {
     const timedLogout = () => {
         const i = getIndex(client.id, users);
         if (users[i] && users[i].userName) {
-            emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} has left due to inactivity`, sendToSelf: false }));
+            broadcast(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} has left due to inactivity`, sendToSelf: false }));
             logger.info(`${users[i].userName} left chat due to inactivity - ${client.id}`);
             client.emit('logout', 'inactivity');
             users[i].userName = null;
@@ -57,11 +58,11 @@ socketIo.on('connection', (client) => {
         const i = getIndex(client.id, users);
         const messageToSend = Object.assign(Object.assign({}, templateMessage), { userName, message, time });
         if (message.length === 0 || message.length > 100) {
-            emitMessage(Object.assign(Object.assign({}, messageToSend), { status: 'invalid', sendToOthers: false }));
+            broadcast(Object.assign(Object.assign({}, messageToSend), { status: 'invalid', sendToOthers: false }));
             logger.info(`Invalid message created by ${userName}`);
         }
         else {
-            emitMessage(messageToSend);
+            broadcast(messageToSend);
             logger.info(`${userName} sent message - ${client.id}`);
         }
         users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
@@ -81,13 +82,13 @@ socketIo.on('connection', (client) => {
             client.emit('login', 'success');
             users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
             users[i].userName = userName;
-            emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${userName} joined the chat` }));
+            broadcast(Object.assign(Object.assign({}, templateMessage), { message: `${userName} joined the chat` }));
             logger.info(`${userName} joined chat - ${client.id}`);
         }
     });
     client.on('logout', () => {
         const i = getIndex(client.id, users);
-        emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} left the chat`, sendToSelf: false }));
+        broadcast(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} left the chat`, sendToSelf: false }));
         logger.info(`${users[i].userName} left the chat - ${client.id}`);
         users[i].userName = null;
         clearTimeout(users[i].timer);
@@ -97,7 +98,7 @@ socketIo.on('connection', (client) => {
     client.on('disconnect', () => {
         const i = getIndex(client.id, users);
         if (users[i].userName) {
-            emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} was disconnected`, sendToSelf: false }));
+            broadcast(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} was disconnected`, sendToSelf: false }));
             if (users[i].timer) {
                 clearTimeout(users[i].timer);
             }

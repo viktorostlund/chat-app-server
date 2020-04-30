@@ -30,13 +30,14 @@ socketIo.on('connection', (client): void => {
   users.push({ id: client.id, userName: '', timer: null });
   logger.info(`Connected client - ${client.id}`);
 
-  const emitMessage = (message: Message): void => {
+  const broadcast = (message: Message): void => {
     const sendList = users.slice();
     if (!message.sendToSelf) {
       sendList.splice(getIndex(message.userName, users), 1);
     }
     if (sendList.length > 0) {
       sendList.forEach((user) => {
+        console.log((socketIo.sockets.connected[user.id] && user.userName) != false)
         if (socketIo.sockets.connected[user.id] && user.userName) {
           socketIo.sockets.connected[user.id].emit('message', message);
         }
@@ -56,7 +57,7 @@ socketIo.on('connection', (client): void => {
   const timedLogout = (): void => {
     const i = getIndex(client.id, users);
     if (users[i] && users[i].userName) {
-      emitMessage({
+      broadcast({
         ...templateMessage,
         message: `${users[i].userName} has left due to inactivity`,
         sendToSelf: false,
@@ -81,10 +82,10 @@ socketIo.on('connection', (client): void => {
     const i = getIndex(client.id, users);
     const messageToSend = { ...templateMessage, userName, message, time };
     if (message.length === 0 || message.length > 100) {
-      emitMessage({ ...messageToSend, status: 'invalid', sendToOthers: false });
+      broadcast({ ...messageToSend, status: 'invalid', sendToOthers: false });
       logger.info(`Invalid message created by ${userName}`);
     } else {
-      emitMessage(messageToSend);
+      broadcast(messageToSend);
       logger.info(`${userName} sent message - ${client.id}`);
     }
     users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
@@ -102,7 +103,7 @@ socketIo.on('connection', (client): void => {
       client.emit('login', 'success');
       users[i].timer = restartTimer(users[i], timedLogout, TIMEOUT);
       users[i].userName = userName;
-      emitMessage({
+      broadcast({
         ...templateMessage,
         message: `${userName} joined the chat`,
       });
@@ -112,7 +113,7 @@ socketIo.on('connection', (client): void => {
 
   client.on('logout', () => {
     const i = getIndex(client.id, users);
-    emitMessage({
+    broadcast({
       ...templateMessage,
       message: `${users[i].userName} left the chat`,
       sendToSelf: false,
@@ -127,16 +128,16 @@ socketIo.on('connection', (client): void => {
   client.on('disconnect', () => {
     const i = getIndex(client.id, users);
     if (users[i].userName) {
-      emitMessage({
+      broadcast({
         ...templateMessage,
         message: `${users[i].userName} was disconnected`,
         sendToSelf: false,
       });
-      if (users[i].timer) {
-        clearTimeout(users[i].timer);
-      }
-      logger.info(`Client disconnected - ${client.id}`);
-      users.splice(i, 1);
     }
+    if (users[i].timer) {
+      clearTimeout(users[i].timer);
+    }
+    logger.info(`Client disconnected - ${client.id}`);
+    users.splice(i, 1);
   });
 });
