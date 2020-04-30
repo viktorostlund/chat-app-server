@@ -99,7 +99,9 @@ socketIo.on('connection', (client) => {
     });
     client.on('disconnect', () => {
         const i = getIndex(client.id, users);
-        emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} was disconnected`, sendToSelf: false }));
+        if (users[i].userName) {
+            emitMessage(Object.assign(Object.assign({}, templateMessage), { message: `${users[i].userName} was disconnected`, sendToSelf: false }));
+        }
         if (users[i].timer) {
             clearTimeout(users[i].timer);
         }

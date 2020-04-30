@@ -1,5 +1,3 @@
-// const app = require('express')(); // eslint-disable-line @typescript-eslint/no-var-requires
-// const http = require('http').createServer(app);
 const { getIndex, restartTimer } = require('./utils/helpers.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 const logger = require('./utils/winston.ts'); // eslint-disable-line @typescript-eslint/no-var-requires
 
@@ -9,17 +7,16 @@ const port = 3001;
 const users = [];
 
 const socketIo = require('socket.io').listen(port); // eslint-disable-line @typescript-eslint/no-var-requires
-// const server = http.listen(port);
 
 exports.socketIo = socketIo;
 
 interface Message {
-  status: string; // Erase this and send status separately
+  status: string;
   userName: string;
   message: string;
   time: number;
   sendToSelf: boolean;
-  sendToOthers: boolean; // Erase this
+  sendToOthers: boolean;
 }
 
 const templateMessage = {
